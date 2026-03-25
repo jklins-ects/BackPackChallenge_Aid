@@ -214,6 +214,9 @@
                     </select>
 
                     <button id="printBtn" type="button">Print</button>
+                    <button id="saveWordBtn" type="button">
+                        Save to Word (.docx)
+                    </button>
                 </div>
 
                 <div class="control-row">
@@ -243,11 +246,13 @@
             </div>
         </div>
 
+        <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
         <script>
             const groupSelect = document.getElementById("groupSelect");
             const toggleNames = document.getElementById("toggleNames");
             const toggleStats = document.getElementById("toggleStats");
             const printBtn = document.getElementById("printBtn");
+            const saveWordBtn = document.getElementById("saveWordBtn");
             const statusMessage = document.getElementById("statusMessage");
             const groupTitle = document.getElementById("groupTitle");
             const participantContainer = document.getElementById(
@@ -399,6 +404,500 @@
                     });
             }
 
+            function getPrintMarkup() {
+                const printAreaClone = document
+                    .querySelector(".print-area")
+                    .cloneNode(true);
+                const wrapper = document.createElement("div");
+                wrapper.appendChild(printAreaClone);
+
+                return `<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>${groupTitle.textContent || "Group Participant Print View"}</title>
+        <style>
+            @page {
+                size: auto;
+                margin: 0.5in;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                color: #222;
+                background: #fff;
+            }
+
+            .print-area {
+                border: none;
+                border-radius: 0;
+                padding: 0;
+            }
+
+            .group-title {
+                display: none;
+            }
+
+            .participant-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 12px;
+                align-items: start;
+                width: 100%;
+            }
+
+            .participant-card {
+                border-radius: 8px;
+                padding: 10px;
+                text-align: center;
+                background: #fff;
+                overflow: hidden;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            .logo-wrap {
+                width: 1in;
+                margin: 0 auto 10px auto;
+            }
+
+            .participant-logo {
+                width: 1in;
+                height: 1in;
+                object-fit: cover;
+                display: block;
+                border-radius: 50%;
+            }
+
+            .participant-name {
+                font-weight: bold;
+                font-size: 0.95rem;
+                margin-bottom: 8px;
+                word-break: break-word;
+            }
+
+            .participant-stats {
+                text-align: left;
+                font-size: 0.8rem;
+                line-height: 1.35;
+            }
+
+            .participant-stats div {
+                margin-bottom: 2px;
+            }
+
+            .hidden {
+                display: none !important;
+            }
+
+            .empty-message {
+                padding: 20px 0;
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        ${wrapper.innerHTML}
+    </body>
+</html>`;
+            }
+
+            function inchesToTwip(inches) {
+                return Math.round(inches * 1440);
+            }
+
+            function dataUrlToUint8Array(dataUrl) {
+                const base64 = dataUrl.split(",")[1] || "";
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+
+                for (let i = 0; i < binary.length; i += 1) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+
+                return bytes;
+            }
+
+            function loadImageElement(src) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () =>
+                        reject(
+                            new Error("Failed to load image for Word export."),
+                        );
+                    img.src = src;
+                });
+            }
+
+            async function imageSrcToBytes(src, options = {}) {
+                if (!src) {
+                    return null;
+                }
+
+                const {
+                    outputSize = 300,
+                    circular = true,
+                    backgroundColor = "#FFFFFF",
+                } = options;
+
+                const img = await loadImageElement(src);
+                const sourceWidth = img.naturalWidth || img.width || outputSize;
+                const sourceHeight =
+                    img.naturalHeight || img.height || outputSize;
+
+                const canvas = document.createElement("canvas");
+                canvas.width = outputSize;
+                canvas.height = outputSize;
+
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, outputSize, outputSize);
+
+                if (circular) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(
+                        outputSize / 2,
+                        outputSize / 2,
+                        outputSize / 2,
+                        0,
+                        Math.PI * 2,
+                    );
+                    ctx.closePath();
+                    ctx.clip();
+                }
+
+                const scale = Math.max(
+                    outputSize / sourceWidth,
+                    outputSize / sourceHeight,
+                );
+                const drawWidth = sourceWidth * scale;
+                const drawHeight = sourceHeight * scale;
+                const dx = (outputSize - drawWidth) / 2;
+                const dy = (outputSize - drawHeight) / 2;
+
+                ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
+
+                if (circular) {
+                    ctx.restore();
+                }
+
+                const opaqueDataUrl = canvas.toDataURL("image/png");
+                return dataUrlToUint8Array(opaqueDataUrl);
+            }
+
+            async function saveToWord() {
+                try {
+                    const docxLib = window.docx;
+
+                    if (!docxLib || !docxLib.Document || !docxLib.Packer) {
+                        throw new Error("docx library failed to load.");
+                    }
+
+                    const {
+                        Document,
+                        Packer,
+                        Paragraph,
+                        Table,
+                        TableRow,
+                        TableCell,
+                        WidthType,
+                        AlignmentType,
+                        VerticalAlign,
+                        HeadingLevel,
+                        TextRun,
+                        ImageRun,
+                        BorderStyle,
+                    } = docxLib;
+
+                    const showNames = toggleNames.checked;
+                    const showStats = toggleStats.checked;
+                    const cards = Array.from(
+                        document.querySelectorAll(".participant-card"),
+                    );
+
+                    const rows = [];
+                    for (let i = 0; i < cards.length; i += 4) {
+                        rows.push(cards.slice(i, i + 4));
+                    }
+
+                    const tableRows = [];
+
+                    for (const rowCards of rows) {
+                        const cells = await Promise.all(
+                            rowCards.map(async (card) => {
+                                const children = [];
+                                const img = card.querySelector(
+                                    ".participant-logo[src]",
+                                );
+
+                                if (img) {
+                                    try {
+                                        const imageBytes =
+                                            await imageSrcToBytes(img.src, {
+                                                outputSize: 300,
+                                                circular: true,
+                                                backgroundColor: "#FFFFFF",
+                                            });
+
+                                        if (imageBytes) {
+                                            children.push(
+                                                new Paragraph({
+                                                    alignment:
+                                                        AlignmentType.CENTER,
+                                                    spacing: { after: 120 },
+                                                    children: [
+                                                        new ImageRun({
+                                                            data: imageBytes,
+                                                            transformation: {
+                                                                width: 96,
+                                                                height: 96,
+                                                            },
+                                                        }),
+                                                    ],
+                                                }),
+                                            );
+                                        }
+                                    } catch (imageError) {
+                                        console.error(imageError);
+                                        children.push(
+                                            new Paragraph({
+                                                alignment: AlignmentType.CENTER,
+                                                spacing: { after: 120 },
+                                                children: [new TextRun(" ")],
+                                            }),
+                                        );
+                                    }
+                                } else {
+                                    children.push(
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            spacing: { after: 120 },
+                                            children: [new TextRun(" ")],
+                                        }),
+                                    );
+                                }
+
+                                if (showNames) {
+                                    const nameText =
+                                        card
+                                            .querySelector(".participant-name")
+                                            ?.textContent?.trim() ||
+                                        "Unnamed Participant";
+
+                                    children.push(
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            spacing: { after: 100 },
+                                            children: [
+                                                new TextRun({
+                                                    text: nameText,
+                                                    bold: true,
+                                                    size: 19,
+                                                }),
+                                            ],
+                                        }),
+                                    );
+                                }
+
+                                if (showStats) {
+                                    const statLines = Array.from(
+                                        card.querySelectorAll(
+                                            ".participant-stats div",
+                                        ),
+                                    ).map((el) => el.textContent.trim());
+
+                                    statLines.forEach((line, index) => {
+                                        children.push(
+                                            new Paragraph({
+                                                alignment: AlignmentType.LEFT,
+                                                spacing: {
+                                                    after:
+                                                        index ===
+                                                        statLines.length - 1
+                                                            ? 0
+                                                            : 40,
+                                                },
+                                                children: [
+                                                    new TextRun({
+                                                        text: line,
+                                                        size: 16,
+                                                    }),
+                                                ],
+                                            }),
+                                        );
+                                    });
+                                }
+
+                                return new TableCell({
+                                    width: {
+                                        size: 25,
+                                        type: WidthType.PERCENTAGE,
+                                    },
+                                    verticalAlign: VerticalAlign.TOP,
+                                    margins: {
+                                        top: 100,
+                                        right: 100,
+                                        bottom: 100,
+                                        left: 100,
+                                    },
+                                    borders: {
+                                        top: {
+                                            style: BorderStyle.NONE,
+                                            size: 0,
+                                            color: "FFFFFF",
+                                        },
+                                        bottom: {
+                                            style: BorderStyle.NONE,
+                                            size: 0,
+                                            color: "FFFFFF",
+                                        },
+                                        left: {
+                                            style: BorderStyle.NONE,
+                                            size: 0,
+                                            color: "FFFFFF",
+                                        },
+                                        right: {
+                                            style: BorderStyle.NONE,
+                                            size: 0,
+                                            color: "FFFFFF",
+                                        },
+                                    },
+                                    children,
+                                });
+                            }),
+                        );
+
+                        while (cells.length < 4) {
+                            cells.push(
+                                new TableCell({
+                                    width: {
+                                        size: 25,
+                                        type: WidthType.PERCENTAGE,
+                                    },
+                                    borders: {
+                                        top: {
+                                            style: BorderStyle.NONE,
+                                            size: 0,
+                                            color: "FFFFFF",
+                                        },
+                                        bottom: {
+                                            style: BorderStyle.NONE,
+                                            size: 0,
+                                            color: "FFFFFF",
+                                        },
+                                        left: {
+                                            style: BorderStyle.NONE,
+                                            size: 0,
+                                            color: "FFFFFF",
+                                        },
+                                        right: {
+                                            style: BorderStyle.NONE,
+                                            size: 0,
+                                            color: "FFFFFF",
+                                        },
+                                    },
+                                    children: [new Paragraph("")],
+                                }),
+                            );
+                        }
+
+                        tableRows.push(
+                            new TableRow({
+                                cantSplit: true,
+                                children: cells,
+                            }),
+                        );
+                    }
+
+                    const doc = new Document({
+                        sections: [
+                            {
+                                properties: {
+                                    page: {
+                                        margin: {
+                                            top: inchesToTwip(0.5),
+                                            right: inchesToTwip(0.5),
+                                            bottom: inchesToTwip(0.5),
+                                            left: inchesToTwip(0.5),
+                                        },
+                                    },
+                                },
+                                children: [
+                                    new Table({
+                                        width: {
+                                            size: 100,
+                                            type: WidthType.PERCENTAGE,
+                                        },
+                                        borders: {
+                                            top: {
+                                                style: BorderStyle.NONE,
+                                                size: 0,
+                                                color: "FFFFFF",
+                                            },
+                                            bottom: {
+                                                style: BorderStyle.NONE,
+                                                size: 0,
+                                                color: "FFFFFF",
+                                            },
+                                            left: {
+                                                style: BorderStyle.NONE,
+                                                size: 0,
+                                                color: "FFFFFF",
+                                            },
+                                            right: {
+                                                style: BorderStyle.NONE,
+                                                size: 0,
+                                                color: "FFFFFF",
+                                            },
+                                            insideHorizontal: {
+                                                style: BorderStyle.NONE,
+                                                size: 0,
+                                                color: "FFFFFF",
+                                            },
+                                            insideVertical: {
+                                                style: BorderStyle.NONE,
+                                                size: 0,
+                                                color: "FFFFFF",
+                                            },
+                                        },
+                                        rows: tableRows,
+                                    }),
+                                ],
+                            },
+                        ],
+                    });
+
+                    const blob = await Packer.toBlob(doc);
+                    const groupName =
+                        (groupSelect.value || "group-participants")
+                            .toString()
+                            .trim()
+                            .replace(/[^a-z0-9-_]+/gi, "_")
+                            .replace(/^_+|_+$/g, "") || "group-participants";
+
+                    const link = document.createElement("a");
+                    const objectUrl = URL.createObjectURL(blob);
+                    link.href = objectUrl;
+                    link.download = `${groupName}.docx`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+                    statusMessage.textContent = "Word document downloaded.";
+                } catch (error) {
+                    console.error(error);
+                    statusMessage.textContent = "Error creating Word document.";
+                }
+            }
+
             groupSelect.addEventListener("change", () => {
                 loadParticipantsForGroup(groupSelect.value);
             });
@@ -408,6 +907,10 @@
 
             printBtn.addEventListener("click", () => {
                 window.print();
+            });
+
+            saveWordBtn.addEventListener("click", () => {
+                saveToWord();
             });
 
             async function init() {
