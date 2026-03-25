@@ -98,7 +98,7 @@
             }
 
             .participant-card {
-                border: 1px solid #d9dfe6;
+                /*border: 1px solid #d9dfe6;*/
                 border-radius: 8px;
                 padding: 10px;
                 text-align: center;
@@ -118,8 +118,9 @@
                 height: 1in;
                 object-fit: cover;
                 display: block;
-                border: 1px solid #bbb;
+                /*    border: 1px solid #bbb;
                 background: #eee;
+            */
             }
 
             .participant-name {
@@ -176,7 +177,8 @@
                     margin: 0;
                 }
 
-                .controls {
+                .controls,
+                .group-title {
                     display: none;
                 }
 
@@ -190,10 +192,11 @@
                     grid-template-columns: repeat(4, 1fr);
                     gap: 12px;
                 }
-
+                /*
                 .participant-card {
                     border: 1px solid #aaa;
                 }
+ */
             }
         </style>
     </head>
@@ -214,12 +217,12 @@
                 <div class="control-row">
                     <div class="toggle-group">
                         <label>
-                            <input type="checkbox" id="toggleNames" checked />
+                            <input type="checkbox" id="toggleNames" />
                             Show names
                         </label>
 
                         <label>
-                            <input type="checkbox" id="toggleStats" checked />
+                            <input type="checkbox" id="toggleStats" />
                             Show stats
                         </label>
                     </div>
