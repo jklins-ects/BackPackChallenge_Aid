@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Group Participant Print View</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: #f4f6f8;
+                color: #222;
+            }
+
+            .page {
+                max-width: 8in; /* stays within normal Word/page width */
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .controls {
+                background: #ffffff;
+                border: 1px solid #d9dfe6;
+                border-radius: 10px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+
+            .controls h1 {
+                margin-top: 0;
+                margin-bottom: 16px;
+                font-size: 1.4rem;
+            }
+
+            .control-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 14px 20px;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+            .control-row:last-child {
+                margin-bottom: 0;
+            }
+
+            label {
+                font-weight: bold;
+            }
+
+            select,
+            button {
+                font: inherit;
+                padding: 8px 10px;
+            }
+
+            .toggle-group {
+                display: flex;
+                gap: 16px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+
+            .toggle-group label {
+                font-weight: normal;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .status {
+                margin-top: 12px;
+                color: #555;
+                font-size: 0.95rem;
+            }
+
+            .print-area {
+                background: #ffffff;
+                border: 1px solid #d9dfe6;
+                border-radius: 10px;
+                padding: 16px;
+            }
+
+            .group-title {
+                margin: 0 0 14px 0;
+                font-size: 1.25rem;
+            }
+
+            .participant-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 16px;
+                align-items: start;
+            }
+
+            .participant-card {
+                border: 1px solid #d9dfe6;
+                border-radius: 8px;
+                padding: 10px;
+                text-align: center;
+                background: #fff;
+                overflow: hidden;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            .logo-wrap {
+                width: 1in;
+                margin: 0 auto 10px auto;
+            }
+
+            .participant-logo {
+                width: 1in;
+                height: 1in;
+                object-fit: cover;
+                display: block;
+                border: 1px solid #bbb;
+                background: #eee;
+            }
+
+            .participant-name {
+                font-weight: bold;
+                font-size: 0.95rem;
+                margin-bottom: 8px;
+                word-break: break-word;
+            }
+
+            .participant-stats {
+                text-align: left;
+                font-size: 0.8rem;
+                line-height: 1.35;
+            }
+
+            .participant-stats div {
+                margin-bottom: 2px;
+            }
+
+            .hidden {
+                display: none !important;
+            }
+
+            .empty-message {
+                padding: 20px 0;
+                color: #666;
+            }
+
+            @media (max-width: 900px) {
+                .participant-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+
+            @media (max-width: 700px) {
+                .participant-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+
+            @media print {
+                @page {
+                    size: auto;
+                    margin: 0.5in;
+                }
+
+                body {
+                    background: #fff;
+                }
+
+                .page {
+                    max-width: none;
+                    padding: 0;
+                    margin: 0;
+                }
+
+                .controls {
+                    display: none;
+                }
+
+                .print-area {
+                    border: none;
+                    border-radius: 0;
+                    padding: 0;
+                }
+
+                .participant-grid {
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 12px;
+                }
+
+                .participant-card {
+                    border: 1px solid #aaa;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <div class="controls">
+                <h1>Group Participant Print View</h1>
+
+                <div class="control-row">
+                    <label for="groupSelect">Group:</label>
+                    <select id="groupSelect">
+                        <option value="">Loading groups...</option>
+                    </select>
+
+                    <button id="printBtn" type="button">Print</button>
+                </div>
+
+                <div class="control-row">
+                    <div class="toggle-group">
+                        <label>
+                            <input type="checkbox" id="toggleNames" checked />
+                            Show names
+                        </label>
+
+                        <label>
+                            <input type="checkbox" id="toggleStats" checked />
+                            Show stats
+                        </label>
+                    </div>
+                </div>
+
+                <div class="status" id="statusMessage">
+                    Loading participants...
+                </div>
+            </div>
+
+            <div class="print-area">
+                <h2 class="group-title" id="groupTitle">Select a group</h2>
+                <div id="participantContainer">
+                    <div class="empty-message">No group selected yet.</div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const groupSelect = document.getElementById("groupSelect");
+            const toggleNames = document.getElementById("toggleNames");
+            const toggleStats = document.getElementById("toggleStats");
+            const printBtn = document.getElementById("printBtn");
+            const statusMessage = document.getElementById("statusMessage");
+            const groupTitle = document.getElementById("groupTitle");
+            const participantContainer = document.getElementById(
+                "participantContainer",
+            );
+
+            async function fetchJson(url) {
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Request failed: ${response.status} ${response.statusText}`,
+                    );
+                }
+
+                return response.json();
+            }
+
+            async function loadGroupIds() {
+                statusMessage.textContent =
+                    "Loading participants to build group list...";
+
+                const groupIds = await fetchJson("/api/participants/groups");
+                groupSelect.innerHTML = "";
+
+                const defaultOption = document.createElement("option");
+                defaultOption.value = "";
+                defaultOption.textContent = "Select a group";
+                groupSelect.appendChild(defaultOption);
+
+                for (const groupId of groupIds) {
+                    const option = document.createElement("option");
+                    option.value = groupId;
+                    option.textContent = groupId;
+                    groupSelect.appendChild(option);
+                }
+
+                statusMessage.textContent = groupIds.length
+                    ? "Select a group to load participants."
+                    : "No group IDs found.";
+            }
+
+            function buildStatHtml(stats = {}) {
+                const keys = [
+                    "activity1",
+                    "activity2",
+                    "activity3",
+                    "activity4",
+                    "activity5",
+                    "activity6",
+                    "activity7",
+                    "activity8",
+                    "activity9",
+                ];
+
+                return keys
+                    .map((key) => {
+                        const value =
+                            typeof stats[key] === "number" ? stats[key] : 0;
+                        return `<div><strong>${key}:</strong> ${value}</div>`;
+                    })
+                    .join("");
+            }
+
+            function renderParticipants(groupId, participants) {
+                groupTitle.textContent = groupId
+                    ? `Group: ${groupId}`
+                    : "Select a group";
+
+                if (!participants.length) {
+                    participantContainer.innerHTML = `
+          <div class="empty-message">No participants found for this group.</div>
+        `;
+                    return;
+                }
+
+                participantContainer.innerHTML = `
+        <div class="participant-grid">
+          ${participants
+              .map((participant) => {
+                  const fullName =
+                      `${participant.firstName || ""} ${participant.lastName || ""}`.trim();
+                  const safeName = fullName || "Unnamed Participant";
+                  const logo = participant.logo || "";
+
+                  return `
+              <div class="participant-card">
+                <div class="logo-wrap">
+                  ${
+                      logo
+                          ? `<img class="participant-logo" src="${logo}" alt="${safeName} logo" />`
+                          : `<div class="participant-logo"></div>`
+                  }
+                </div>
+
+                <div class="participant-name ${toggleNames.checked ? "" : "hidden"}">
+                  ${safeName}
+                </div>
+
+                <div class="participant-stats ${toggleStats.checked ? "" : "hidden"}">
+                  ${buildStatHtml(participant.stats)}
+                </div>
+              </div>
+            `;
+              })
+              .join("")}
+        </div>
+      `;
+            }
+
+            async function loadParticipantsForGroup(groupId) {
+                if (!groupId) {
+                    groupTitle.textContent = "Select a group";
+                    participantContainer.innerHTML = `
+          <div class="empty-message">No group selected yet.</div>
+        `;
+                    statusMessage.textContent =
+                        "Select a group to load participants.";
+                    return;
+                }
+
+                try {
+                    statusMessage.textContent = `Loading participants for ${groupId}...`;
+
+                    const participants = await fetchJson(
+                        `/api/participants/group/${encodeURIComponent(groupId)}`,
+                    );
+                    renderParticipants(groupId, participants);
+
+                    statusMessage.textContent = `${participants.length} participant(s) loaded for ${groupId}.`;
+                } catch (error) {
+                    console.error(error);
+                    participantContainer.innerHTML = `
+          <div class="empty-message">Could not load participants for this group.</div>
+        `;
+                    statusMessage.textContent = "Error loading participants.";
+                }
+            }
+
+            function refreshVisibility() {
+                document.querySelectorAll(".participant-name").forEach((el) => {
+                    el.classList.toggle("hidden", !toggleNames.checked);
+                });
+
+                document
+                    .querySelectorAll(".participant-stats")
+                    .forEach((el) => {
+                        el.classList.toggle("hidden", !toggleStats.checked);
+                    });
+            }
+
+            groupSelect.addEventListener("change", () => {
+                loadParticipantsForGroup(groupSelect.value);
+            });
+
+            toggleNames.addEventListener("change", refreshVisibility);
+            toggleStats.addEventListener("change", refreshVisibility);
+
+            printBtn.addEventListener("click", () => {
+                window.print();
+            });
+
+            async function init() {
+                try {
+                    await loadGroupIds();
+                } catch (error) {
+                    console.error(error);
+                    groupSelect.innerHTML = `<option value="">Unable to load groups</option>`;
+                    statusMessage.textContent = "Error loading group IDs.";
+                }
+            }
+
+            init();
+        </script>
+    </body>
+</html>
