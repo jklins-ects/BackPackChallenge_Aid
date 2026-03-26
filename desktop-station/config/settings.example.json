@@ -1,5 +1,6 @@
 {
     "api_base_url": "https://ectsbackpack26.ects-cmp.com",
+    "api_key": "fbd99c526fa04120918458785ee11c66019a4e07b24d4bd19f991222ce435fd8",
     "station_id": "station-1",
     "default_points": 1,
     "window_title": "BackPackChallenge Station"

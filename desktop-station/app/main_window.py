@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.config = load_config()
-        self.api_client = ApiClient(self.config.api_base_url)
+        self.api_client = ApiClient(self.config.api_base_url, self.config.api_key)
         self.nfc_service = NfcService()
         self.activity_tabs: list[ActivityTab] = []
         self.link_tab: LinkTab | None = None

@@ -75,14 +75,21 @@ for scoring, participant lookup, and NFC linking workflows.
 
 Create a `.env` file in the project root.
 
-```env
-MONGO_URI=mongodb://127.0.0.1:27017
-DB_NAME=backpack_challenge
-COLLECTION_NAME=participants
-ACTIVITY_EVENTS_COLLECTION_NAME=activityEvents
-PORT=3000
-PUBLIC_API_URL=http://localhost:3000
-```
+See [.env.example](/C:/Users/swank/Desktop/25-26/BackPackChallenge/.env.example) for the current environment variables.
+
+Important auth-related values:
+
+- `SESSION_SECRET`: Express session signing secret
+- `AZURE_CLIENT_ID`: Microsoft Entra app registration client id
+- `AZURE_CLIENT_SECRET`: Microsoft Entra app registration client secret
+- `AZURE_TENANT_ID`: Microsoft Entra tenant id
+- `AZURE_REDIRECT_URI`: callback URL for Microsoft sign-in
+- `AZURE_POST_LOGOUT_REDIRECT_URI`: where Azure should send users after logout
+- `ADMIN_ALLOWED_EMAILS`: optional comma-separated admin email allowlist
+- `ADMIN_ALLOWED_DOMAINS`: optional comma-separated admin domain allowlist
+- `STATION_API_KEYS`: comma-separated desktop station API keys
+
+Public student profile pages remain outside login at `/participants/:id/stats`.
 
 ---
 
@@ -427,6 +434,27 @@ This project is structured so it can be deployed as:
 It is suitable for local development and can be adapted for services such as Railway.
 
 Because database setup is scripted, schema and indexes can be recreated consistently in deployment environments.
+
+## Admin Authentication
+
+The app now uses two different admin access modes:
+
+- Web admin pages and browser-based admin actions use Microsoft sign-in
+- Desktop station actions use a station API key sent in request headers
+
+Protected browser pages include:
+
+- `/`
+- `/laser`
+- `/create-logo`
+- `/assign-name`
+- `/api-docs`
+
+Protected API routes include participant/admin APIs and activity scoring APIs.
+
+The public student profile page is still intentionally public:
+
+- `/participants/:id/stats`
 
 ---
 

@@ -15,6 +15,7 @@ SETTINGS_EXAMPLE_PATH = CONFIG_DIR / "settings.example.json"
 @dataclass
 class AppConfig:
     api_base_url: str
+    api_key: str
     station_id: str
     default_points: float
     window_title: str
@@ -43,6 +44,13 @@ def load_config() -> AppConfig:
             "http://localhost:3000",
         ),
     ).rstrip("/")
+    api_key = str(
+        _get_env_or_value(
+            "BACKPACK_API_KEY",
+            data.get("api_key"),
+            "",
+        ),
+    ).strip()
     station_id = str(
         _get_env_or_value(
             "BACKPACK_STATION_ID",
@@ -67,6 +75,7 @@ def load_config() -> AppConfig:
 
     return AppConfig(
         api_base_url=api_base_url,
+        api_key=api_key,
         station_id=station_id,
         default_points=default_points,
         window_title=window_title or "BackPackChallenge Station",

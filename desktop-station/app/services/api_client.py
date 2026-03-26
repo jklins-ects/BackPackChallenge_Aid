@@ -11,12 +11,15 @@ class ApiError(Exception):
 
 
 class ApiClient:
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, api_key: str = "") -> None:
         self.base_url = base_url.rstrip("/")
+        self.api_key = api_key.strip()
 
     def _request(self, method: str, path: str, payload: dict | None = None):
         url = f"{self.base_url}{path}"
         headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["X-Station-Key"] = self.api_key
         data = None
 
         if payload is not None:

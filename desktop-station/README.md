@@ -53,6 +53,7 @@ Copy-Item .\config\settings.example.json .\config\settings.json
 Config fields:
 
 - `api_base_url`: URL for the running Node/Express API
+- `api_key`: station API key used to authenticate desktop requests
 - `station_id`: default station id sent with score submissions
 - `default_points`: initial value placed in the score field
 - `window_title`: desktop window title
@@ -60,6 +61,7 @@ Config fields:
 Environment variable overrides:
 
 - `BACKPACK_API_BASE_URL`
+- `BACKPACK_API_KEY`
 - `BACKPACK_STATION_ID`
 - `BACKPACK_DEFAULT_POINTS`
 - `BACKPACK_WINDOW_TITLE`
