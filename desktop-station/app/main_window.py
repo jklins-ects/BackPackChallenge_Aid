@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 
 from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QApplication,
     QFormLayout,
@@ -18,6 +19,7 @@ from PyQt5.QtWidgets import (
 )
 
 from app.config import load_config
+from app.resources import asset_path
 from app.services.api_client import ApiClient, ApiError
 from app.services.nfc_service import NfcService
 from app.ui.activity_tab import ActivityTab
@@ -49,6 +51,7 @@ class MainWindow(QMainWindow):
     def _build_shell(self) -> None:
         self.setWindowTitle(self.config.window_title)
         self.resize(1080, 760)
+        self.setWindowIcon(QIcon(asset_path("app-icon.svg")))
 
         central = QWidget()
         central_layout = QVBoxLayout(central)
@@ -335,6 +338,7 @@ class MainWindow(QMainWindow):
 
 def run() -> None:
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(asset_path("app-icon.svg")))
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())

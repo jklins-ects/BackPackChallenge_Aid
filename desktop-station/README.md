@@ -15,6 +15,7 @@ access. The Node/Express app remains the API and MongoDB system of record.
 - Global current-NFC display
 - API client for the existing Express routes
 - `pyscard`-based NFC service layer
+- Shared branded app icon/favicon assets
 - Windows packaging script for `PyInstaller`
 
 ## Quick start

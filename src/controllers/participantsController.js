@@ -357,14 +357,18 @@ async function getPublicStatsPage(req, res, next) {
                     <meta charset="UTF-8" />
                     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                     <title>${fullName} Stats</title>
+                    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
                     <style>
                         :root {
-                            --bg: #eef4f1;
+                            --bg: #eef5f1;
                             --card: #ffffff;
-                            --text: #18322b;
-                            --muted: #5c766d;
-                            --accent: #1e7b5c;
-                            --border: #d4e1db;
+                            --text: #173129;
+                            --muted: #5f756d;
+                            --accent: #1f7a5c;
+                            --accent-dark: #15553f;
+                            --border: #d4e2db;
+                            --surface: rgba(255, 255, 255, 0.9);
+                            --shadow: 0 18px 40px rgba(23, 49, 41, 0.12);
                         }
 
                         * { box-sizing: border-box; }
@@ -372,14 +376,53 @@ async function getPublicStatsPage(req, res, next) {
                         body {
                             margin: 0;
                             font-family: Arial, Helvetica, sans-serif;
-                            background: linear-gradient(180deg, #edf6f1 0%, #f8fbf9 100%);
+                            background: radial-gradient(circle at top, #f9fcfb 0%, #edf5f1 42%, #e3efe9 100%);
                             color: var(--text);
-                            padding: 20px;
+                            padding: 24px 16px 40px;
                         }
 
                         .page {
-                            width: min(760px, 100%);
+                            width: min(1040px, 100%);
                             margin: 0 auto;
+                        }
+
+                        .navbar {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            gap: 16px;
+                            margin-bottom: 24px;
+                            padding: 16px 18px;
+                            background: var(--surface);
+                            border: 1px solid var(--border);
+                            border-radius: 18px;
+                            box-shadow: 0 10px 24px rgba(24, 50, 43, 0.08);
+                        }
+
+                        .brand-block h1 {
+                            margin: 0 0 4px;
+                            font-size: 1.2rem;
+                        }
+
+                        .brand-block p {
+                            margin: 0;
+                            color: var(--muted);
+                            font-size: 0.92rem;
+                        }
+
+                        .nav-links {
+                            display: flex;
+                            flex-wrap: wrap;
+                            gap: 10px;
+                        }
+
+                        .nav-links a {
+                            text-decoration: none;
+                            color: var(--accent-dark);
+                            background: #edf6f1;
+                            padding: 10px 14px;
+                            border-radius: 999px;
+                            font-weight: 700;
                         }
 
                         .hero, .stats-card {
@@ -387,7 +430,7 @@ async function getPublicStatsPage(req, res, next) {
                             border: 1px solid var(--border);
                             border-radius: 22px;
                             padding: 24px;
-                            box-shadow: 0 14px 34px rgba(24, 50, 43, 0.08);
+                            box-shadow: var(--shadow);
                         }
 
                         .hero {
@@ -448,10 +491,28 @@ async function getPublicStatsPage(req, res, next) {
                             font-weight: 700;
                             font-size: 1.1rem;
                         }
+
+                        @media (max-width: 640px) {
+                            .navbar {
+                                flex-direction: column;
+                                align-items: flex-start;
+                            }
+                        }
                     </style>
                 </head>
                 <body>
                     <div class="page">
+                        <nav class="navbar" aria-label="Main navigation">
+                            <div class="brand-block">
+                                <h1>ECTS Backpack Challenge 2026</h1>
+                                <p>Participant stats</p>
+                            </div>
+                            <div class="nav-links">
+                                <a href="/">Home</a>
+                                <a href="/laser">Group Print View</a>
+                                <a href="/create-logo">Logo Creator</a>
+                            </div>
+                        </nav>
                         <section class="hero">
                             <div class="logo">
                                 ${
@@ -542,6 +603,13 @@ async function getPrintableGroupCodes(req, res, next) {
             padding: 0.5in;
             color: #222;
           }
+          .site-title {
+            margin: 0 0 0.1in 0;
+            font-size: 11pt;
+            color: #1e7b5c;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+          }
           h1 {
             margin: 0 0 0.25in 0;
             font-size: 18pt;
@@ -587,6 +655,7 @@ async function getPrintableGroupCodes(req, res, next) {
         </style>
       </head>
       <body>
+        <div class="site-title">ECTS Backpack Challenge 2026</div>
         <h1>Participant Codes for ${groupId}</h1>
         <div class="grid">${cardsHtml}</div>
       </body>

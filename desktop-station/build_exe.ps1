@@ -9,4 +9,5 @@ python -m PyInstaller `
     --windowed `
     --name BackPackChallengeStation `
     --add-data "config;config" `
+    --add-data "assets;assets" `
     main.py

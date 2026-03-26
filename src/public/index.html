@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ECTS Backpack Challenge</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <style>
+            :root {
+                --bg: #eef5f1;
+                --card: #ffffff;
+                --text: #173129;
+                --muted: #5f756d;
+                --accent: #1f7a5c;
+                --accent-dark: #15553f;
+                --border: #d4e2db;
+                --surface: rgba(255, 255, 255, 0.9);
+                --shadow: 0 18px 40px rgba(23, 49, 41, 0.12);
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, Helvetica, sans-serif;
+                color: var(--text);
+                background:
+                    radial-gradient(circle at top, #f9fcfb 0%, #edf5f1 42%, #e3efe9 100%);
+                min-height: 100vh;
+            }
+
+            .page {
+                width: min(1040px, calc(100% - 32px));
+                margin: 0 auto;
+                padding: 24px 0 40px;
+            }
+
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 28px;
+                padding: 16px 18px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                box-shadow: 0 10px 26px rgba(23, 49, 41, 0.08);
+            }
+
+            .brand-block h1 {
+                margin: 0 0 4px;
+                font-size: 1.25rem;
+            }
+
+            .brand-block p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.93rem;
+            }
+
+            .nav-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .nav-link,
+            .feature-link {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                text-decoration: none;
+                font-weight: 700;
+                transition:
+                    transform 0.15s ease,
+                    background 0.15s ease,
+                    color 0.15s ease;
+            }
+
+            .nav-link {
+                padding: 10px 14px;
+                border-radius: 999px;
+                color: var(--accent-dark);
+                background: #edf6f1;
+            }
+
+            .nav-link:hover,
+            .feature-link:hover {
+                transform: translateY(-1px);
+            }
+
+            .hero {
+                padding: 38px 34px;
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 22px;
+                box-shadow: var(--shadow);
+            }
+
+            .eyebrow {
+                margin: 0 0 10px;
+                color: var(--accent);
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                font-size: 0.9rem;
+            }
+
+            h1 {
+                margin: 0 0 14px;
+                font-size: clamp(2.2rem, 5vw, 3.4rem);
+                line-height: 1.05;
+            }
+
+            .hero-copy {
+                margin: 0;
+                max-width: 640px;
+                color: var(--muted);
+                line-height: 1.65;
+                font-size: 1.04rem;
+            }
+
+            .feature-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 18px;
+                margin-top: 26px;
+            }
+
+            .feature-card {
+                padding: 24px;
+                border-radius: 18px;
+                border: 1px solid var(--border);
+                background: linear-gradient(180deg, #fbfefd 0%, #f2f8f5 100%);
+            }
+
+            .feature-card h2 {
+                margin: 0 0 10px;
+                font-size: 1.25rem;
+            }
+
+            .feature-card p {
+                margin: 0 0 16px;
+                color: var(--muted);
+                line-height: 1.55;
+            }
+
+            .feature-link {
+                padding: 12px 16px;
+                border-radius: 14px;
+                background: var(--accent);
+                color: #ffffff;
+            }
+
+            @media (max-width: 700px) {
+                .navbar {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .feature-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .hero {
+                    padding: 30px 22px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <nav class="navbar" aria-label="Main navigation">
+                <div class="brand-block">
+                    <h1>ECTS Backpack Challenge 2026</h1>
+                    <p>Site navigation</p>
+                </div>
+                <div class="nav-links">
+                    <a class="nav-link" href="/">Home</a>
+                    <a class="nav-link" href="/laser">Group Print View</a>
+                    <a class="nav-link" href="/create-logo">Logo Creator</a>
+                </div>
+            </nav>
+
+            <main class="hero">
+                <p class="eyebrow">ECTS Backpack Challenge 2026</p>
+                <h1>Station tools for participant printouts and logo creation.</h1>
+                <p class="hero-copy">
+                    Use the links below to open the current admin pages for participant
+                    group printouts and participant logo creation.
+                </p>
+
+                <div class="feature-grid">
+                    <section class="feature-card">
+                        <h2>Group Print View</h2>
+                        <p>
+                            Load a group, toggle names and stats, and print or export the
+                            participant cards.
+                        </p>
+                        <a class="feature-link" href="/laser">Open Group Print View</a>
+                    </section>
+
+                    <section class="feature-card">
+                        <h2>Logo Creator</h2>
+                        <p>
+                            Select a participant, crop an image, and save it as their
+                            circular logo.
+                        </p>
+                        <a class="feature-link" href="/create-logo">Open Logo Creator</a>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </body>
+</html>
