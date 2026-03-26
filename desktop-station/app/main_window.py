@@ -201,7 +201,7 @@ class MainWindow(QMainWindow):
 
         self.link_tab = LinkTab(main_window=self)
         self.link_tab.initialize_groups(groups)
-        self.tabs.addTab(self.link_tab, "Link NFC")
+        self.tabs.addTab(self.link_tab, "Associate")
 
     def _refresh_nfc_state(self) -> None:
         state = self.nfc_service.refresh()

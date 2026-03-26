@@ -26,7 +26,7 @@ class LinkTab(QWidget):
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        form_group = QGroupBox("Link Current NFC ID")
+        form_group = QGroupBox("Associate Participant")
         form_layout = QFormLayout(form_group)
 
         self.current_nfc_label = QLabel(self.main_window.get_current_nfc_id() or "No NFC id selected")
@@ -46,7 +46,8 @@ class LinkTab(QWidget):
         self.public_link_label = QLabel("No public link loaded")
         self.public_link_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-        self.link_button = QPushButton("Link NFC and Write Stats Link")
+        self.save_name_button = QPushButton("Save Participant Info")
+        self.link_button = QPushButton("Associate NFC and Write Stats Link")
 
         self.status_output = QTextEdit()
         self.status_output.setReadOnly(True)
@@ -54,12 +55,14 @@ class LinkTab(QWidget):
 
         layout.addWidget(form_group)
         layout.addWidget(self.public_link_label)
+        layout.addWidget(self.save_name_button)
         layout.addWidget(self.link_button)
         layout.addWidget(self.status_output)
 
     def _wire_events(self) -> None:
         self.group_combo.currentIndexChanged.connect(self._load_participants_for_group)
         self.participant_combo.currentIndexChanged.connect(self._handle_participant_selection_change)
+        self.save_name_button.clicked.connect(self._save_participant_info)
         self.link_button.clicked.connect(self._link_current_nfc)
 
     def initialize_groups(self, groups: list[str]) -> None:
@@ -218,6 +221,37 @@ class LinkTab(QWidget):
             self.apply_shared_selection()
             self._populate_name_fields(participant)
 
+    def _save_participant_info(self) -> dict | None:
+        participant = self.participant_combo.currentData()
+        if not isinstance(participant, dict):
+            self.status_output.append("Choose a participant before saving.")
+            return None
+
+        participant_id = str(participant["_id"])
+        first_name = self.first_name_input.text().strip()
+        last_name = self.last_name_input.text().strip()
+        current_first = str(participant.get("firstName", "") or "").strip()
+        current_last = str(participant.get("lastName", "") or "").strip()
+
+        if first_name == current_first and last_name == current_last:
+            self.status_output.append("Participant info is already up to date.")
+            return participant
+
+        updated_participant = self.main_window.api_client.patch_participant(
+            participant_id=participant_id,
+            payload={
+                "firstName": first_name,
+                "lastName": last_name,
+            },
+        )
+        participant = updated_participant.get("participant", updated_participant)
+        self.main_window.update_cached_participant(participant)
+        self._populate_name_fields(participant)
+        self.status_output.append(
+            f"Saved participant info for {first_name or '-'} {last_name or '-'}."
+        )
+        return participant
+
     def _link_current_nfc(self) -> None:
         participant = self.participant_combo.currentData()
         nfc_id = self.main_window.get_current_nfc_id()
@@ -231,26 +265,11 @@ class LinkTab(QWidget):
             return
 
         try:
-            participant_id = str(participant["_id"])
-            first_name = self.first_name_input.text().strip()
-            last_name = self.last_name_input.text().strip()
-            current_first = str(participant.get("firstName", "") or "").strip()
-            current_last = str(participant.get("lastName", "") or "").strip()
+            updated_participant = self._save_participant_info()
+            if isinstance(updated_participant, dict):
+                participant = updated_participant
 
-            if first_name != current_first or last_name != current_last:
-                updated_participant = self.main_window.api_client.patch_participant(
-                    participant_id=participant_id,
-                    payload={
-                        "firstName": first_name,
-                        "lastName": last_name,
-                    },
-                )
-                if isinstance(updated_participant, dict):
-                    participant = updated_participant.get("participant", updated_participant)
-                    self.main_window.update_cached_participant(participant)
-                    self.status_output.append(
-                        f"Updated participant name to {first_name or '-'} {last_name or '-'}."
-                    )
+            participant_id = str(participant["_id"])
 
             result = self.main_window.api_client.link_nfc(
                 participant_id=participant_id,
