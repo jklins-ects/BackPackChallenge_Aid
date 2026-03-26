@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Assign Participant Name</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <style>
+            :root {
+                --bg: #eef5f1;
+                --card: #ffffff;
+                --text: #173129;
+                --muted: #5f756d;
+                --accent: #1f7a5c;
+                --accent-dark: #15553f;
+                --border: #d4e2db;
+                --surface: rgba(255, 255, 255, 0.9);
+                --shadow: 0 18px 40px rgba(23, 49, 41, 0.12);
+                --danger: #b42318;
+                --success: #027a48;
+            }
+
+            * { box-sizing: border-box; }
+
+            body {
+                margin: 0;
+                font-family: Arial, Helvetica, sans-serif;
+                background:
+                    radial-gradient(circle at top, #f9fcfb 0%, #edf5f1 42%, #e3efe9 100%);
+                color: var(--text);
+                padding: 24px 16px 40px;
+            }
+
+            .page {
+                width: min(1040px, 100%);
+                margin: 0 auto;
+            }
+
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                margin: 0 auto 24px;
+                padding: 16px 18px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                box-shadow: 0 10px 26px rgba(23, 49, 41, 0.08);
+            }
+
+            .brand-block h1 {
+                margin: 0 0 4px;
+                font-size: 1.25rem;
+            }
+
+            .brand-block p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.93rem;
+            }
+
+            .nav-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .nav-links a {
+                text-decoration: none;
+                color: var(--accent-dark);
+                background: #edf6f1;
+                border-radius: 999px;
+                padding: 10px 14px;
+                font-weight: 700;
+            }
+
+            .card {
+                width: min(980px, 100%);
+                margin: 0 auto;
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 22px;
+                box-shadow: var(--shadow);
+                overflow: hidden;
+            }
+
+            .header,
+            form {
+                padding-left: 28px;
+                padding-right: 28px;
+            }
+
+            .header {
+                padding-top: 28px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid var(--border);
+                background: linear-gradient(180deg, #fbfefd 0%, #f2f8f5 100%);
+            }
+
+            .header h1 {
+                margin: 0 0 8px;
+                font-size: 1.9rem;
+                line-height: 1.15;
+            }
+
+            .header p {
+                margin: 0;
+                color: var(--muted);
+                line-height: 1.5;
+            }
+
+            form {
+                padding-top: 24px;
+                padding-bottom: 28px;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 18px;
+            }
+
+            .field {
+                margin-bottom: 18px;
+            }
+
+            label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 700;
+                font-size: 0.96rem;
+            }
+
+            input,
+            select,
+            button {
+                font: inherit;
+            }
+
+            input,
+            select {
+                width: 100%;
+                padding: 12px 14px;
+                border-radius: 12px;
+                border: 1px solid #c6d6ce;
+                background: #fff;
+                color: var(--text);
+                outline: none;
+                transition:
+                    border-color 0.15s ease,
+                    box-shadow 0.15s ease;
+            }
+
+            input:focus,
+            select:focus {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 4px rgba(31, 122, 92, 0.12);
+            }
+
+            .summary {
+                margin: 6px 0 20px;
+                padding: 16px;
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                background: #f7fbf9;
+                color: var(--muted);
+                line-height: 1.55;
+            }
+
+            .actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                align-items: center;
+                margin-top: 22px;
+            }
+
+            .primary-btn {
+                appearance: none;
+                border: 0;
+                border-radius: 14px;
+                padding: 12px 18px;
+                font-weight: 700;
+                cursor: pointer;
+                background: var(--accent);
+                color: #fff;
+            }
+
+            .status {
+                min-height: 24px;
+                font-size: 0.95rem;
+                font-weight: 700;
+            }
+
+            .status.success { color: var(--success); }
+            .status.error { color: var(--danger); }
+            .status.info { color: var(--accent-dark); }
+
+            @media (max-width: 700px) {
+                .navbar {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <nav class="navbar" aria-label="Main navigation">
+                <div class="brand-block">
+                    <h1>ECTS Backpack Challenge 2026</h1>
+                    <p>Participant naming</p>
+                </div>
+                <div class="nav-links">
+                    <a href="/">Home</a>
+                    <a href="/assign-name">Assign Name</a>
+                    <a href="/laser">Group Print View</a>
+                    <a href="/create-logo">Logo Creator</a>
+                </div>
+            </nav>
+
+            <div class="card">
+                <div class="header">
+                    <h1>Assign Participant Name</h1>
+                    <p>
+                        Select a group and participant code, then enter or edit the
+                        participant's first and last name.
+                    </p>
+                </div>
+
+                <form id="mainForm">
+                    <div class="grid">
+                        <div class="field">
+                            <label for="groupId">Group ID</label>
+                            <select id="groupId">
+                                <option value="">Loading groups...</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="participantId">Participant Code</label>
+                            <select id="participantId" disabled>
+                                <option value="">Select a group first</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="field">
+                            <label for="firstName">First Name</label>
+                            <input id="firstName" type="text" />
+                        </div>
+
+                        <div class="field">
+                            <label for="lastName">Last Name</label>
+                            <input id="lastName" type="text" />
+                        </div>
+                    </div>
+
+                    <div class="summary" id="participantSummary">
+                        Select a participant to load any known name data.
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" id="submitButton" class="primary-btn">
+                            Save Name
+                        </button>
+                        <div id="statusMessage" class="status info"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            const groupSelect = document.getElementById("groupId");
+            const participantSelect = document.getElementById("participantId");
+            const firstNameInput = document.getElementById("firstName");
+            const lastNameInput = document.getElementById("lastName");
+            const participantSummary = document.getElementById("participantSummary");
+            const statusMessage = document.getElementById("statusMessage");
+            const submitButton = document.getElementById("submitButton");
+            const state = { participantsById: new Map() };
+
+            function setStatus(message, type = "info") {
+                statusMessage.textContent = message;
+                statusMessage.className = `status ${type}`;
+            }
+
+            async function fetchJson(url, options = {}) {
+                const response = await fetch(url, options);
+                const contentType = response.headers.get("content-type") || "";
+                let data = null;
+
+                if (contentType.includes("application/json")) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    data = text ? { message: text } : null;
+                }
+
+                if (!response.ok) {
+                    throw new Error(
+                        data?.error ||
+                        data?.message ||
+                        `Request failed with status ${response.status}`,
+                    );
+                }
+
+                return data;
+            }
+
+            function getSelectedParticipant() {
+                return state.participantsById.get(participantSelect.value) || null;
+            }
+
+            function updateParticipantSummary() {
+                const participant = getSelectedParticipant();
+                if (!participant) {
+                    participantSummary.textContent =
+                        "Select a participant to load any known name data.";
+                    firstNameInput.value = "";
+                    lastNameInput.value = "";
+                    return;
+                }
+
+                firstNameInput.value = participant.firstName || "";
+                lastNameInput.value = participant.lastName || "";
+                participantSummary.innerHTML = `
+                    Group: ${participant.groupId || "-"}<br />
+                    Participant Code: ${participant.participantCode || "-"}<br />
+                    NFC ID: ${participant.nfcId || "Not linked yet"}
+                `;
+            }
+
+            function fillParticipantOptions(participants) {
+                state.participantsById = new Map();
+                participantSelect.innerHTML = "";
+
+                const placeholder = document.createElement("option");
+                placeholder.value = "";
+                placeholder.textContent = participants.length
+                    ? "Select a participant code"
+                    : "No participants found";
+                participantSelect.appendChild(placeholder);
+
+                for (const participant of participants) {
+                    state.participantsById.set(String(participant._id), participant);
+                    const option = document.createElement("option");
+                    option.value = String(participant._id);
+                    option.textContent = participant.participantCode || "(No code)";
+                    participantSelect.appendChild(option);
+                }
+
+                participantSelect.disabled = participants.length === 0;
+                updateParticipantSummary();
+            }
+
+            async function loadGroups() {
+                try {
+                    setStatus("Loading groups...", "info");
+                    const groups = await fetchJson("/api/participants/groups");
+                    groupSelect.innerHTML = '<option value="">Select a group</option>';
+
+                    for (const groupId of groups) {
+                        const option = document.createElement("option");
+                        option.value = groupId;
+                        option.textContent = groupId;
+                        groupSelect.appendChild(option);
+                    }
+
+                    setStatus(
+                        groups.length
+                            ? "Select a group and participant code."
+                            : "No groups found.",
+                        "info",
+                    );
+                } catch (error) {
+                    groupSelect.innerHTML =
+                        '<option value="">Unable to load groups</option>';
+                    setStatus(error.message || "Unable to load groups.", "error");
+                }
+            }
+
+            async function loadParticipantsForGroup(groupId) {
+                participantSelect.disabled = true;
+                participantSelect.innerHTML =
+                    '<option value="">Loading participants...</option>';
+                state.participantsById = new Map();
+                updateParticipantSummary();
+
+                if (!groupId) {
+                    participantSelect.innerHTML =
+                        '<option value="">Select a group first</option>';
+                    setStatus("Select a group and participant code.", "info");
+                    return;
+                }
+
+                try {
+                    setStatus(`Loading participants for ${groupId}...`, "info");
+                    const participants = await fetchJson(
+                        `/api/participants/group/${encodeURIComponent(groupId)}`,
+                    );
+                    fillParticipantOptions(participants);
+                    setStatus(
+                        participants.length
+                            ? "Enter or edit the participant name, then save."
+                            : "No participants found for this group.",
+                        "info",
+                    );
+                } catch (error) {
+                    participantSelect.innerHTML =
+                        '<option value="">Unable to load participants</option>';
+                    setStatus(error.message || "Unable to load participants.", "error");
+                }
+            }
+
+            groupSelect.addEventListener("change", () => {
+                loadParticipantsForGroup(groupSelect.value);
+            });
+
+            participantSelect.addEventListener("change", updateParticipantSummary);
+
+            document.getElementById("mainForm").addEventListener("submit", async (event) => {
+                event.preventDefault();
+                const participant = getSelectedParticipant();
+                if (!participant) {
+                    setStatus("Choose a participant before saving.", "error");
+                    return;
+                }
+
+                try {
+                    submitButton.disabled = true;
+                    setStatus("Saving participant name...", "info");
+
+                    const updated = await fetchJson(
+                        `/api/participants/${encodeURIComponent(participant._id)}`,
+                        {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                firstName: firstNameInput.value.trim(),
+                                lastName: lastNameInput.value.trim(),
+                            }),
+                        },
+                    );
+
+                    const updatedParticipant = updated?.participant || updated;
+                    if (updatedParticipant && updatedParticipant._id) {
+                        state.participantsById.set(
+                            String(updatedParticipant._id),
+                            updatedParticipant,
+                        );
+                    }
+
+                    updateParticipantSummary();
+                    setStatus("Participant name saved successfully.", "success");
+                } catch (error) {
+                    setStatus(error.message || "Unable to save participant name.", "error");
+                } finally {
+                    submitButton.disabled = false;
+                }
+            });
+
+            loadGroups();
+        </script>
+    </body>
+</html>

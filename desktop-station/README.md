@@ -10,7 +10,7 @@ access. The Node/Express app remains the API and MongoDB system of record.
 - PyQt5 desktop window
 - Tabs generated from `/api/activities/metadata`
 - One scoring tab per activity
-- A link tab for associating a participant with the current NFC id
+- A link tab for associating a participant with the current NFC id and capturing first/last name
 - Global station configuration
 - Global current-NFC display
 - API client for the existing Express routes
@@ -84,6 +84,10 @@ Current scaffold behavior:
 - The desktop app polls automatically for reader/tag changes
 - The `Link NFC` tab links the current NFC id to a participant and then writes
   the participant stats URL to the tag
+- The `Link NFC` tab can also update the participant first and last name at
+  the same time, so names do not need to be preloaded in advance
+- If the current NFC tag is already linked, the desktop app loads the known
+  participant and prefills any saved name data for editing
 - NFC reader support now uses `pyscard` in
   `app/services/nfc_service.py`
 - The app defaults to the first detected PC/SC reader

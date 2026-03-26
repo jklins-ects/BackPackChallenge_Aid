@@ -99,6 +99,10 @@ class ApiClient:
             {"nfcId": nfc_id},
         )
 
+    def patch_participant(self, participant_id: str, payload: dict) -> dict:
+        safe_id = urllib.parse.quote(participant_id, safe="")
+        return self._request("PATCH", f"/api/participants/{safe_id}", payload)
+
     def get_public_link(self, participant_id: str) -> dict:
         safe_id = urllib.parse.quote(participant_id, safe="")
         return self._request("GET", f"/api/participants/{safe_id}/public-link")

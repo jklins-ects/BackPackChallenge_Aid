@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QLabel,
+    QLineEdit,
     QPushButton,
     QTextEdit,
     QVBoxLayout,
@@ -18,6 +19,7 @@ class LinkTab(QWidget):
         super().__init__()
         self.main_window = main_window
         self.last_linked_participant_id = ""
+        self.last_loaded_nfc_id = ""
         self._build_ui()
         self._wire_events()
 
@@ -32,10 +34,14 @@ class LinkTab(QWidget):
         self.group_combo = QComboBox()
         self.group_combo.setMinimumWidth(220)
         self.participant_combo = QComboBox()
+        self.first_name_input = QLineEdit()
+        self.last_name_input = QLineEdit()
 
         form_layout.addRow("Current NFC", self.current_nfc_label)
         form_layout.addRow("Group", self.group_combo)
         form_layout.addRow("Participant", self.participant_combo)
+        form_layout.addRow("First Name", self.first_name_input)
+        form_layout.addRow("Last Name", self.last_name_input)
 
         self.public_link_label = QLabel("No public link loaded")
         self.public_link_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -53,7 +59,7 @@ class LinkTab(QWidget):
 
     def _wire_events(self) -> None:
         self.group_combo.currentIndexChanged.connect(self._load_participants_for_group)
-        self.participant_combo.currentIndexChanged.connect(self._announce_participant_selection)
+        self.participant_combo.currentIndexChanged.connect(self._handle_participant_selection_change)
         self.link_button.clicked.connect(self._link_current_nfc)
 
     def initialize_groups(self, groups: list[str]) -> None:
@@ -84,7 +90,9 @@ class LinkTab(QWidget):
             self._clear_participants("Select a group first")
 
     def refresh_context(self) -> None:
-        self.current_nfc_label.setText(self.main_window.get_current_nfc_id() or "No NFC id selected")
+        current_nfc_id = self.main_window.get_current_nfc_id()
+        self.current_nfc_label.setText(current_nfc_id or "No NFC id selected")
+        self._sync_selection_from_current_nfc(current_nfc_id)
 
     def refresh_participant_from_cache(self, participant_id: str) -> None:
         if not participant_id:
@@ -102,11 +110,18 @@ class LinkTab(QWidget):
                 label = f"{label_name} - {updated_participant.get('participantCode', '')}"
                 self.participant_combo.setItemData(index, updated_participant)
                 self.participant_combo.setItemText(index, label)
+                current_participant = self.participant_combo.currentData()
+                if (
+                    isinstance(current_participant, dict)
+                    and str(current_participant.get("_id", "")) == participant_id
+                ):
+                    self._populate_name_fields(updated_participant)
                 break
 
     def _clear_participants(self, placeholder: str) -> None:
         self.participant_combo.clear()
         self.participant_combo.addItem(placeholder, "")
+        self._populate_name_fields(None)
 
     def _load_participants_for_group(
         self,
@@ -151,16 +166,57 @@ class LinkTab(QWidget):
             self._clear_participants("Unable to load participants")
             self.status_output.append(f"Error loading participants: {error}")
 
-    def _announce_participant_selection(self) -> None:
+    def _handle_participant_selection_change(self) -> None:
         participant = self.participant_combo.currentData()
         if not isinstance(participant, dict):
+            self._populate_name_fields(None)
             return
 
+        self._populate_name_fields(participant)
         self.main_window.set_shared_participant_selection(
             self.group_combo.currentData() or "",
             str(participant.get("_id", "")),
             source=self,
         )
+
+    def _populate_name_fields(self, participant: dict | None) -> None:
+        if not isinstance(participant, dict):
+            self.first_name_input.clear()
+            self.last_name_input.clear()
+            return
+
+        self.first_name_input.setText(str(participant.get("firstName", "") or ""))
+        self.last_name_input.setText(str(participant.get("lastName", "") or ""))
+
+    def _sync_selection_from_current_nfc(self, nfc_id: str) -> None:
+        normalized_nfc = (nfc_id or "").strip()
+        if normalized_nfc == self.last_loaded_nfc_id:
+            return
+
+        self.last_loaded_nfc_id = normalized_nfc
+        if not normalized_nfc:
+            self.public_link_label.setText("No public link loaded")
+            return
+
+        try:
+            participant = self.main_window.get_cached_participant_by_nfc(normalized_nfc)
+        except Exception:
+            self.public_link_label.setText("No public link loaded")
+            return
+
+        if not isinstance(participant, dict):
+            return
+
+        group_id = str(participant.get("groupId", "")).strip()
+        participant_id = str(participant.get("_id", "")).strip()
+        if group_id and participant_id:
+            self.main_window.set_shared_participant_selection(
+                group_id,
+                participant_id,
+                source=self,
+            )
+            self.apply_shared_selection()
+            self._populate_name_fields(participant)
 
     def _link_current_nfc(self) -> None:
         participant = self.participant_combo.currentData()
@@ -175,8 +231,29 @@ class LinkTab(QWidget):
             return
 
         try:
+            participant_id = str(participant["_id"])
+            first_name = self.first_name_input.text().strip()
+            last_name = self.last_name_input.text().strip()
+            current_first = str(participant.get("firstName", "") or "").strip()
+            current_last = str(participant.get("lastName", "") or "").strip()
+
+            if first_name != current_first or last_name != current_last:
+                updated_participant = self.main_window.api_client.patch_participant(
+                    participant_id=participant_id,
+                    payload={
+                        "firstName": first_name,
+                        "lastName": last_name,
+                    },
+                )
+                if isinstance(updated_participant, dict):
+                    participant = updated_participant.get("participant", updated_participant)
+                    self.main_window.update_cached_participant(participant)
+                    self.status_output.append(
+                        f"Updated participant name to {first_name or '-'} {last_name or '-'}."
+                    )
+
             result = self.main_window.api_client.link_nfc(
-                participant_id=str(participant["_id"]),
+                participant_id=participant_id,
                 nfc_id=nfc_id,
             )
             resolved_count = result.get("resolvedPendingEvents", 0)
@@ -187,6 +264,7 @@ class LinkTab(QWidget):
             self.public_link_label.setText(public_link or "No public link loaded")
             full_name = f"{updated.get('firstName', '')} {updated.get('lastName', '')}".strip()
             display_name = full_name or updated.get("participantCode", "participant")
+            self._populate_name_fields(updated)
             self.status_output.append(
                 f"Linked NFC id {nfc_id} to {display_name}. "
                 f"Resolved pending events: {resolved_count}."

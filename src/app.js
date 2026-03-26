@@ -22,6 +22,10 @@ app.get("/laser", (req, res) => {
     res.sendFile(path.join(__dirname, "public") + "/group-print.html");
 });
 
+app.get("/assign-name", (req, res) => {
+    res.sendFile(path.join(__dirname, "public") + "/assign-name.html");
+});
+
 app.get("/create-logo", (req, res) => {
     res.sendFile(path.join(__dirname, "public") + "/logo-creator.html");
 });

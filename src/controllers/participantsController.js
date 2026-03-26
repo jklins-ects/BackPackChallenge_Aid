@@ -509,6 +509,7 @@ async function getPublicStatsPage(req, res, next) {
                             </div>
                             <div class="nav-links">
                                 <a href="/">Home</a>
+                                <a href="/assign-name">Assign Name</a>
                                 <a href="/laser">Group Print View</a>
                                 <a href="/create-logo">Logo Creator</a>
                             </div>
