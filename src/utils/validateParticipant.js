@@ -1,3 +1,5 @@
+const { ACTIVITY_KEYS } = require("./activityMetadata");
+
 function isValidParticipant(body) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
         return false;
@@ -21,18 +23,6 @@ function isValidParticipant(body) {
     if ("lastName" in body && typeof body.lastName !== "string") return false;
     if ("logo" in body && typeof body.logo !== "string") return false;
 
-    const statKeys = [
-        "activity1",
-        "activity2",
-        "activity3",
-        "activity4",
-        "activity5",
-        "activity6",
-        "activity7",
-        "activity8",
-        "activity9",
-    ];
-
     if ("stats" in body) {
         if (
             !body.stats ||
@@ -43,7 +33,7 @@ function isValidParticipant(body) {
         }
 
         for (const key of Object.keys(body.stats)) {
-            if (!statKeys.includes(key)) return false;
+            if (!ACTIVITY_KEYS.includes(key)) return false;
             if (typeof body.stats[key] !== "number") return false;
         }
     }

@@ -1,15 +1,7 @@
+const { ACTIVITY_KEYS } = require("./activityMetadata");
+
 function buildDefaultStats() {
-    return {
-        activity1: 0,
-        activity2: 0,
-        activity3: 0,
-        activity4: 0,
-        activity5: 0,
-        activity6: 0,
-        activity7: 0,
-        activity8: 0,
-        activity9: 0,
-    };
+    return Object.fromEntries(ACTIVITY_KEYS.map((key) => [key, 0]));
 }
 
 function applyDefaultStats(inputStats = {}) {

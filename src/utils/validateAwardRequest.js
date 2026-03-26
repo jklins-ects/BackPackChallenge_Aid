@@ -1,14 +1,4 @@
-const ALLOWED_ACTIVITY_KEYS = [
-    "activity1",
-    "activity2",
-    "activity3",
-    "activity4",
-    "activity5",
-    "activity6",
-    "activity7",
-    "activity8",
-    "activity9",
-];
+const { ACTIVITY_KEYS } = require("./activityMetadata");
 
 function validateAwardByCode(body) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -25,7 +15,7 @@ function validateAwardByCode(body) {
         return { valid: false, message: "participantCode is required." };
     }
 
-    if (!ALLOWED_ACTIVITY_KEYS.includes(activityKey)) {
+    if (!ACTIVITY_KEYS.includes(activityKey)) {
         return { valid: false, message: "activityKey is invalid." };
     }
 
@@ -51,7 +41,7 @@ function validateAwardByNfc(body) {
         return { valid: false, message: "nfcId is required." };
     }
 
-    if (!ALLOWED_ACTIVITY_KEYS.includes(activityKey)) {
+    if (!ACTIVITY_KEYS.includes(activityKey)) {
         return { valid: false, message: "activityKey is invalid." };
     }
 
@@ -67,7 +57,7 @@ function validateAwardByNfc(body) {
 }
 
 module.exports = {
-    ALLOWED_ACTIVITY_KEYS,
+    ALLOWED_ACTIVITY_KEYS: ACTIVITY_KEYS,
     validateAwardByCode,
     validateAwardByNfc,
 };

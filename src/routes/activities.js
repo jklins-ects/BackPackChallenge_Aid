@@ -12,6 +12,18 @@ const router = express.Router();
 
 /**
  * @swagger
+ * /api/activities/metadata:
+ *   get:
+ *     summary: Get activity keys and friendly titles
+ *     tags: [Activities]
+ *     responses:
+ *       200:
+ *         description: Activity metadata
+ */
+router.get("/metadata", controller.getMetadata);
+
+/**
+ * @swagger
  * /api/activities/award-by-code:
  *   post:
  *     summary: Award points using groupId and participantCode

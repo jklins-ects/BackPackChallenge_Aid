@@ -10,6 +10,19 @@ const participantsService = require("../services/participantsService");
 const {
     validateBulkCreateParticipants,
 } = require("../utils/validateBulkCreateParticipants");
+const {
+    getVisibleActivityMetadata,
+    getActivityTitleByKey,
+} = require("../utils/activityMetadata");
+
+function buildPublicStatsUrl(req, participantId) {
+    const baseUrl = (process.env.PUBLIC_API_URL || `${req.protocol}://${req.get("host")}`).replace(
+        /\/+$/,
+        "",
+    );
+
+    return `${baseUrl}/participants/${participantId}/stats`;
+}
 
 async function createParticipant(req, res, next) {
     try {
@@ -253,8 +266,195 @@ async function linkNfcIdToParticipant(req, res, next) {
         res.json({
             message: "NFC linked successfully.",
             resolvedPendingEvents: result.resolvedPendingEvents,
+            publicLink: buildPublicStatsUrl(req, String(result.participant._id)),
             participant: result.participant,
         });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function getParticipantPublicLink(req, res, next) {
+    try {
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).json({ error: "Invalid participant id." });
+        }
+
+        const participant = await participantsService.getParticipantById(id);
+        if (!participant) {
+            return res.status(404).json({ error: "Participant not found." });
+        }
+
+        res.json({
+            participantId: String(participant._id),
+            publicLink: buildPublicStatsUrl(req, String(participant._id)),
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function getPublicStatsPage(req, res, next) {
+    try {
+        const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).send("Invalid participant id.");
+        }
+
+        const participant = await participantsService.getParticipantById(id);
+        if (!participant) {
+            return res.status(404).send("Participant not found.");
+        }
+
+        const activityMetadata = getVisibleActivityMetadata();
+        const titleByKey = getActivityTitleByKey();
+        const fullName =
+            `${participant.firstName || ""} ${participant.lastName || ""}`.trim() ||
+            "Participant";
+
+        const statsMarkup = activityMetadata
+            .map((activity) => {
+                const value =
+                    typeof participant.stats?.[activity.key] === "number"
+                        ? participant.stats[activity.key]
+                        : 0;
+
+                return `
+                    <div class="stat-row">
+                        <span class="stat-title">${titleByKey[activity.key] || activity.key}</span>
+                        <span class="stat-value">${value}</span>
+                    </div>
+                `;
+            })
+            .join("");
+
+        res.send(`
+            <!doctype html>
+            <html lang="en">
+                <head>
+                    <meta charset="UTF-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                    <title>${fullName} Stats</title>
+                    <style>
+                        :root {
+                            --bg: #eef4f1;
+                            --card: #ffffff;
+                            --text: #18322b;
+                            --muted: #5c766d;
+                            --accent: #1e7b5c;
+                            --border: #d4e1db;
+                        }
+
+                        * { box-sizing: border-box; }
+
+                        body {
+                            margin: 0;
+                            font-family: Arial, Helvetica, sans-serif;
+                            background: linear-gradient(180deg, #edf6f1 0%, #f8fbf9 100%);
+                            color: var(--text);
+                            padding: 20px;
+                        }
+
+                        .page {
+                            width: min(760px, 100%);
+                            margin: 0 auto;
+                        }
+
+                        .hero, .stats-card {
+                            background: var(--card);
+                            border: 1px solid var(--border);
+                            border-radius: 22px;
+                            padding: 24px;
+                            box-shadow: 0 14px 34px rgba(24, 50, 43, 0.08);
+                        }
+
+                        .hero {
+                            margin-bottom: 18px;
+                            text-align: center;
+                        }
+
+                        .logo {
+                            width: 120px;
+                            height: 120px;
+                            margin: 0 auto 16px;
+                            border-radius: 50%;
+                            overflow: hidden;
+                            background: #f3f7f5;
+                            border: 2px solid var(--border);
+                        }
+
+                        .logo img {
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                            display: block;
+                        }
+
+                        h1 {
+                            margin: 0 0 8px;
+                            font-size: 2rem;
+                        }
+
+                        .meta {
+                            color: var(--muted);
+                            line-height: 1.5;
+                        }
+
+                        .stats-card h2 {
+                            margin: 0 0 16px;
+                        }
+
+                        .stat-row {
+                            display: flex;
+                            justify-content: space-between;
+                            gap: 16px;
+                            padding: 12px 0;
+                            border-top: 1px solid var(--border);
+                        }
+
+                        .stat-row:first-of-type {
+                            border-top: 0;
+                            padding-top: 0;
+                        }
+
+                        .stat-title {
+                            color: var(--muted);
+                        }
+
+                        .stat-value {
+                            color: var(--accent);
+                            font-weight: 700;
+                            font-size: 1.1rem;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="page">
+                        <section class="hero">
+                            <div class="logo">
+                                ${
+                                    participant.logo
+                                        ? `<img src="${participant.logo}" alt="${fullName} logo" />`
+                                        : ""
+                                }
+                            </div>
+                            <h1>${fullName}</h1>
+                            <div class="meta">
+                                Group: ${participant.groupId || "-"}<br />
+                                Participant Code: ${participant.participantCode || "-"}
+                            </div>
+                        </section>
+                        <section class="stats-card">
+                            <h2>Current Stats</h2>
+                            ${statsMarkup}
+                        </section>
+                    </div>
+                </body>
+            </html>
+        `);
     } catch (error) {
         next(error);
     }
@@ -388,6 +588,8 @@ module.exports = {
     getParticipantByNfcId,
     getParticipantByGroupAndCode,
     getParticipantsByGroupId,
+    getParticipantPublicLink,
+    getPublicStatsPage,
     getPrintableGroupCodes,
     linkNfcIdToParticipant,
     updateParticipantById,

@@ -1,3 +1,5 @@
+const { ACTIVITY_KEYS } = require("./activityMetadata");
+
 function isValidParticipantPatch(body) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
         return {
@@ -14,18 +16,6 @@ function isValidParticipantPatch(body) {
         "lastName",
         "logo",
         "stats",
-    ];
-
-    const allowedStatFields = [
-        "activity1",
-        "activity2",
-        "activity3",
-        "activity4",
-        "activity5",
-        "activity6",
-        "activity7",
-        "activity8",
-        "activity9",
     ];
 
     const keys = Object.keys(body);
@@ -92,7 +82,7 @@ function isValidParticipantPatch(body) {
         }
 
         for (const statKey of statKeys) {
-            if (!allowedStatFields.includes(statKey)) {
+            if (!ACTIVITY_KEYS.includes(statKey)) {
                 return {
                     valid: false,
                     message: `Invalid stats field: ${statKey}`,

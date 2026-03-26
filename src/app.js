@@ -4,6 +4,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger/swagger");
 const participantsRouter = require("./routes/participants");
 const activitiesRouter = require("./routes/activities");
+const participantsController = require("./controllers/participantsController");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
 
@@ -12,6 +13,16 @@ const app = express();
 app.use(express.json({ limit: "10mb" }));
 
 app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/laser", (req, res) => {
+    res.sendFile(path.join(__dirname, "public") + "/group-print.html");
+});
+
+app.get("/create-logo", (req, res) => {
+    res.sendFile(path.join(__dirname, "public") + "/logo-creator.html");
+});
+
+app.get("/participants/:id/stats", participantsController.getPublicStatsPage);
 
 app.get("/health", (req, res) => {
     res.json({ ok: true });

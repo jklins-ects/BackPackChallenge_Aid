@@ -1,2 +1,10 @@
 .env
 node_modules
+desktop-station/.venv/
+desktop-station/venv/
+desktop-station/build/
+desktop-station/dist/
+desktop-station/**/*.pyc
+desktop-station/**/__pycache__/
+desktop-station/*.spec
+desktop-station/config/settings.json

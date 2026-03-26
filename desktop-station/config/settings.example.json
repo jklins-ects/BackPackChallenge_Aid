@@ -1,0 +1,6 @@
+{
+    "api_base_url": "http://localhost:3000",
+    "station_id": "station-1",
+    "default_points": 1,
+    "window_title": "BackPackChallenge Station"
+}

@@ -219,6 +219,24 @@ router.get("/nfc/:nfcId", controller.getParticipantByNfcId);
 
 /**
  * @swagger
+ * /api/participants/{id}/public-link:
+ *   get:
+ *     summary: Get the public stats link for a participant
+ *     tags: [Participants]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Public stats link
+ */
+router.get("/:id/public-link", controller.getParticipantPublicLink);
+
+/**
+ * @swagger
  * /api/participants/group/{groupId}/print-codes:
  *   get:
  *     summary: Get a printable code sheet for a group

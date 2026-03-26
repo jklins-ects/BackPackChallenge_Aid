@@ -14,8 +14,10 @@ async function incrementParticipantStatById(
     await participants.updateOne(
         { _id: new ObjectId(participantId) },
         {
-            $inc: { [`stats.${activityKey}`]: points },
-            $set: { updatedAt: new Date() },
+            $set: {
+                [`stats.${activityKey}`]: points,
+                updatedAt: new Date(),
+            },
         },
     );
 
@@ -39,7 +41,7 @@ async function logResolvedEvent({
         participantCode,
         nfcId,
         stationId,
-        eventType: "score_added",
+        eventType: "score_set",
         activityKey,
         points,
         resolved: true,
@@ -54,7 +56,7 @@ async function logPendingNfcEvent({ nfcId, stationId, activityKey, points }) {
     const result = await activityEvents.insertOne({
         nfcId,
         stationId,
-        eventType: "score_added",
+        eventType: "score_set",
         activityKey,
         points,
         resolved: false,
@@ -152,18 +154,20 @@ async function resolvePendingEventsForParticipant(participant) {
         };
     }
 
-    const incDoc = {};
+    pendingEvents.sort((a, b) => {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        return aTime - bTime;
+    });
+
+    const setDoc = { updatedAt: new Date() };
     for (const event of pendingEvents) {
-        incDoc[`stats.${event.activityKey}`] =
-            (incDoc[`stats.${event.activityKey}`] || 0) + event.points;
+        setDoc[`stats.${event.activityKey}`] = event.points;
     }
 
     await participants.updateOne(
         { _id: new ObjectId(participant._id) },
-        {
-            $inc: incDoc,
-            $set: { updatedAt: new Date() },
-        },
+        { $set: setDoc },
     );
 
     await activityEvents.updateMany(

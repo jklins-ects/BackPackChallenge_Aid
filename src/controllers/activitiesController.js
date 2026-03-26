@@ -4,6 +4,22 @@ const {
     validateAwardByCode,
     validateAwardByNfc,
 } = require("../utils/validateAwardRequest");
+const {
+    getActivityMetadata,
+    getVisibleActivityMetadata,
+    getActivityTitleByKey,
+} = require("../utils/activityMetadata");
+
+function getMetadata(req, res) {
+    const activities = getActivityMetadata();
+    const visibleActivities = getVisibleActivityMetadata();
+
+    res.json({
+        activities,
+        visibleActivities,
+        titleByKey: getActivityTitleByKey(),
+    });
+}
 
 async function awardByCode(req, res, next) {
     try {
@@ -76,6 +92,7 @@ async function awardByNfc(req, res, next) {
 }
 
 module.exports = {
+    getMetadata,
     awardByCode,
     awardByNfc,
 };
