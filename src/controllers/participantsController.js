@@ -15,11 +15,30 @@ const {
     getActivityTitleByKey,
 } = require("../utils/activityMetadata");
 
+function normalizePublicBaseUrl(rawValue, fallbackProtocol = "https") {
+    const trimmed = String(rawValue || "").trim().replace(/\/+$/, "");
+
+    if (!trimmed) {
+        return "";
+    }
+
+    if (/^https?:\/\//i.test(trimmed)) {
+        return trimmed;
+    }
+
+    return `${fallbackProtocol}://${trimmed}`;
+}
+
 function buildPublicStatsUrl(req, participantId) {
-    const baseUrl = (process.env.PUBLIC_API_URL || `${req.protocol}://${req.get("host")}`).replace(
-        /\/+$/,
-        "",
+    const configuredBaseUrl = normalizePublicBaseUrl(
+        process.env.PUBLIC_API_URL,
+        "https",
     );
+    const requestBaseUrl = normalizePublicBaseUrl(
+        `${req.protocol}://${req.get("host")}`,
+        req.protocol || "https",
+    );
+    const baseUrl = configuredBaseUrl || requestBaseUrl;
 
     return `${baseUrl}/participants/${participantId}/stats`;
 }

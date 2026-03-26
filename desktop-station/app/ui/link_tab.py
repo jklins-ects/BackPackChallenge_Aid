@@ -86,6 +86,24 @@ class LinkTab(QWidget):
     def refresh_context(self) -> None:
         self.current_nfc_label.setText(self.main_window.get_current_nfc_id() or "No NFC id selected")
 
+    def refresh_participant_from_cache(self, participant_id: str) -> None:
+        if not participant_id:
+            return
+
+        updated_participant = self.main_window.participant_cache_by_id.get(participant_id)
+        if not updated_participant:
+            return
+
+        for index in range(1, self.participant_combo.count()):
+            participant = self.participant_combo.itemData(index)
+            if isinstance(participant, dict) and str(participant.get("_id", "")) == participant_id:
+                full_name = f"{updated_participant.get('firstName', '')} {updated_participant.get('lastName', '')}".strip()
+                label_name = full_name or "(No name yet)"
+                label = f"{label_name} - {updated_participant.get('participantCode', '')}"
+                self.participant_combo.setItemData(index, updated_participant)
+                self.participant_combo.setItemText(index, label)
+                break
+
     def _clear_participants(self, placeholder: str) -> None:
         self.participant_combo.clear()
         self.participant_combo.addItem(placeholder, "")
@@ -106,7 +124,7 @@ class LinkTab(QWidget):
             self.main_window.set_shared_group_selection(group_id, source=self)
 
         try:
-            participants = self.main_window.api_client.get_participants_by_group(group_id)
+            participants = self.main_window.get_cached_participants_by_group(group_id)
             self.participant_combo.blockSignals(True)
             self.participant_combo.clear()
             if not participants:
@@ -163,6 +181,7 @@ class LinkTab(QWidget):
             )
             resolved_count = result.get("resolvedPendingEvents", 0)
             updated = result.get("participant", {})
+            self.main_window.update_cached_participant(updated)
             self.last_linked_participant_id = str(updated.get("_id", participant["_id"]))
             public_link = result.get("publicLink", "")
             self.public_link_label.setText(public_link or "No public link loaded")

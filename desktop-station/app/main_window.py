@@ -36,6 +36,9 @@ class MainWindow(QMainWindow):
         self.activity_title_by_key: dict[str, str] = {}
         self.shared_group_id = ""
         self.shared_participant_id = ""
+        self.group_participants_cache: dict[str, list[dict]] = {}
+        self.participant_cache_by_id: dict[str, dict] = {}
+        self.participant_cache_by_nfc: dict[str, dict] = {}
         self._last_nfc_signature = ""
         self.nfc_timer = QTimer(self)
 
@@ -249,6 +252,75 @@ class MainWindow(QMainWindow):
             tab.apply_shared_selection()
         if self.link_tab and self.link_tab is not source:
             self.link_tab.apply_shared_selection()
+
+    def get_cached_participants_by_group(self, group_id: str, force_refresh: bool = False) -> list[dict]:
+        normalized_group = (group_id or "").strip()
+        if not normalized_group:
+            return []
+
+        if not force_refresh and normalized_group in self.group_participants_cache:
+            return self.group_participants_cache[normalized_group]
+
+        participants = self.api_client.get_participants_by_group(normalized_group)
+        self.group_participants_cache[normalized_group] = participants
+        for participant in participants:
+            self._store_participant_in_cache(participant)
+        return participants
+
+    def get_cached_participant_by_nfc(self, nfc_id: str, force_refresh: bool = False) -> dict:
+        normalized_nfc = (nfc_id or "").strip()
+        if not normalized_nfc:
+            raise ValueError("nfc_id is required")
+
+        if not force_refresh and normalized_nfc in self.participant_cache_by_nfc:
+            return self.participant_cache_by_nfc[normalized_nfc]
+
+        participant = self.api_client.get_participant_by_nfc(normalized_nfc)
+        self._store_participant_in_cache(participant)
+        return participant
+
+    def update_cached_participant(self, participant: dict | None) -> None:
+        if not isinstance(participant, dict):
+            return
+        self._store_participant_in_cache(participant)
+        self._refresh_participant_views(str(participant.get("_id", "")).strip())
+
+    def _store_participant_in_cache(self, participant: dict) -> None:
+        participant_id = str(participant.get("_id", "")).strip()
+        group_id = str(participant.get("groupId", "")).strip()
+        nfc_id = str(participant.get("nfcId", "")).strip()
+
+        if participant_id:
+            self.participant_cache_by_id[participant_id] = participant
+        if nfc_id:
+            self.participant_cache_by_nfc[nfc_id] = participant
+
+        if group_id:
+            existing = self.group_participants_cache.get(group_id, [])
+            replaced = False
+            updated_group = []
+            for existing_participant in existing:
+                existing_id = str(existing_participant.get("_id", "")).strip()
+                if participant_id and existing_id == participant_id:
+                    updated_group.append(participant)
+                    replaced = True
+                else:
+                    updated_group.append(existing_participant)
+
+            if not replaced:
+                updated_group.append(participant)
+
+            if updated_group:
+                self.group_participants_cache[group_id] = updated_group
+
+    def _refresh_participant_views(self, participant_id: str) -> None:
+        if not participant_id:
+            return
+
+        for tab in self.activity_tabs:
+            tab.refresh_participant_from_cache(participant_id)
+        if self.link_tab:
+            self.link_tab.refresh_participant_from_cache(participant_id)
 
     def get_station_id(self) -> str:
         value = self.station_id_input.text().strip()

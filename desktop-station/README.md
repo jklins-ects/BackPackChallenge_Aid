@@ -56,6 +56,19 @@ Config fields:
 - `default_points`: initial value placed in the score field
 - `window_title`: desktop window title
 
+Environment variable overrides:
+
+- `BACKPACK_API_BASE_URL`
+- `BACKPACK_STATION_ID`
+- `BACKPACK_DEFAULT_POINTS`
+- `BACKPACK_WINDOW_TITLE`
+
+Configuration precedence is:
+
+1. environment variables
+2. `config/settings.json`
+3. `config/settings.example.json`
+
 Run the app:
 
 ```powershell

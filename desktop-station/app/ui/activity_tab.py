@@ -131,6 +131,31 @@ class ActivityTab(QWidget):
         if self.by_nfc_radio.isChecked():
             self._preview_current_nfc_participant()
 
+    def refresh_participant_from_cache(self, participant_id: str) -> None:
+        if not participant_id:
+            return
+
+        updated_participant = self.main_window.participant_cache_by_id.get(participant_id)
+        if not updated_participant:
+            return
+
+        for index in range(1, self.participant_combo.count()):
+            participant = self.participant_combo.itemData(index)
+            if isinstance(participant, dict) and str(participant.get("_id", "")) == participant_id:
+                self.participant_combo.setItemData(index, updated_participant)
+                self.participant_combo.setItemText(index, self._participant_label(updated_participant))
+                if index == self.participant_combo.currentIndex():
+                    self.current_preview_participant = updated_participant
+                    self._render_preview(updated_participant)
+                break
+
+        if (
+            self.current_preview_participant
+            and str(self.current_preview_participant.get("_id", "")) == participant_id
+        ):
+            self.current_preview_participant = updated_participant
+            self._render_preview(updated_participant)
+
     def _set_mode_state(self) -> None:
         by_code = self.by_code_radio.isChecked()
         self.group_panel.setVisible(by_code)
@@ -163,7 +188,7 @@ class ActivityTab(QWidget):
             self.main_window.set_shared_group_selection(group_id, source=self)
 
         try:
-            participants = self.main_window.api_client.get_participants_by_group(group_id)
+            participants = self.main_window.get_cached_participants_by_group(group_id)
             self.participants = participants
             self.participant_combo.blockSignals(True)
             self.participant_combo.clear()
@@ -211,7 +236,7 @@ class ActivityTab(QWidget):
             return
 
         try:
-            participant = self.main_window.api_client.get_participant_by_nfc(nfc_id)
+            participant = self.main_window.get_cached_participant_by_nfc(nfc_id)
             self.current_preview_participant = participant
             self._render_preview(participant)
         except Exception:
@@ -262,6 +287,7 @@ class ActivityTab(QWidget):
                     station_id=station_id,
                 )
                 updated = result.get("participant")
+                self.main_window.update_cached_participant(updated)
                 self.current_preview_participant = updated
                 self._render_preview(updated)
                 self._append_status(
@@ -296,6 +322,7 @@ class ActivityTab(QWidget):
                 )
             else:
                 updated = result.get("participant")
+                self.main_window.update_cached_participant(updated)
                 self.current_preview_participant = updated
                 self._render_preview(updated)
                 self._append_status(

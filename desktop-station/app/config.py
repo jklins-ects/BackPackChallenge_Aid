@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -24,14 +25,45 @@ def _load_json(path: Path) -> dict:
         return json.load(file)
 
 
+def _get_env_or_value(env_name: str, value, default):
+    env_value = os.getenv(env_name)
+    if env_value is not None and env_value.strip() != "":
+        return env_value
+    return value if value is not None else default
+
+
 def load_config() -> AppConfig:
     source_path = SETTINGS_PATH if SETTINGS_PATH.exists() else SETTINGS_EXAMPLE_PATH
     data = _load_json(source_path)
 
-    api_base_url = str(data.get("api_base_url", "http://localhost:3000")).rstrip("/")
-    station_id = str(data.get("station_id", "station-1")).strip() or "station-1"
-    default_points = float(data.get("default_points", 1))
-    window_title = str(data.get("window_title", "BackPackChallenge Station")).strip()
+    api_base_url = str(
+        _get_env_or_value(
+            "BACKPACK_API_BASE_URL",
+            data.get("api_base_url"),
+            "http://localhost:3000",
+        ),
+    ).rstrip("/")
+    station_id = str(
+        _get_env_or_value(
+            "BACKPACK_STATION_ID",
+            data.get("station_id"),
+            "station-1",
+        ),
+    ).strip() or "station-1"
+    default_points = float(
+        _get_env_or_value(
+            "BACKPACK_DEFAULT_POINTS",
+            data.get("default_points"),
+            1,
+        ),
+    )
+    window_title = str(
+        _get_env_or_value(
+            "BACKPACK_WINDOW_TITLE",
+            data.get("window_title"),
+            "BackPackChallenge Station",
+        ),
+    ).strip()
 
     return AppConfig(
         api_base_url=api_base_url,
