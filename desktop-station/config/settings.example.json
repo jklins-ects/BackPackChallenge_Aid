@@ -1,5 +1,5 @@
 {
-    "api_base_url": "https://backpackchallengeaid-production.up.railway.app/",
+    "api_base_url": "https://ectsbackpack26.ects-cmp.com",
     "station_id": "station-1",
     "default_points": 1,
     "window_title": "BackPackChallenge Station"
