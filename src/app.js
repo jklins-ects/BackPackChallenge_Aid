@@ -38,6 +38,12 @@ app.get("/favicon.svg", (req, res) => {
 
 app.use("/auth", authRouter);
 
+app.get("/scoreboard", (req, res) => {
+    res.sendFile(path.join(__dirname, "public") + "/scoreboard.html");
+});
+
+app.get("/api/public/scoreboard", participantsController.getPublicScoreboardData);
+
 app.get("/participants/:id/stats", participantsController.getPublicStatsPage);
 app.get("/", (req, res) => {
     return requireWebAuth(req, res, () =>
@@ -54,6 +60,12 @@ app.get("/laser", (req, res) => {
 app.get("/assign-name", (req, res) => {
     return requireWebAuth(req, res, () =>
         res.sendFile(path.join(__dirname, "public") + "/assign-name.html"),
+    );
+});
+
+app.get("/group-setup", (req, res) => {
+    return requireWebAuth(req, res, () =>
+        res.sendFile(path.join(__dirname, "public") + "/group-setup.html"),
     );
 });
 

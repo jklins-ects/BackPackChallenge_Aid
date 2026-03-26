@@ -59,6 +59,15 @@ async function getParticipantsByGroupId(groupId) {
     return collection.find({ groupId }).toArray();
 }
 
+async function groupExists(groupId) {
+    const collection = await getParticipantsCollection();
+    const existing = await collection.findOne(
+        { groupId },
+        { projection: { _id: 1 } },
+    );
+    return Boolean(existing);
+}
+
 async function updateParticipantById(id, participant) {
     const collection = await getParticipantsCollection();
 
@@ -228,6 +237,7 @@ module.exports = {
     getParticipantByNfcId,
     getParticipantByGroupAndCode,
     getParticipantsByGroupId,
+    groupExists,
     linkNfcIdToParticipant,
     updateParticipantById,
     patchParticipantById,

@@ -57,6 +57,7 @@ const router = express.Router();
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post("/bulk-create", controller.bulkCreateParticipants);
+router.post("/bulk-create-groups", controller.bulkCreateGroups);
 
 /**
  * @swagger

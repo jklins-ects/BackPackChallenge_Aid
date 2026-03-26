@@ -43,6 +43,12 @@ function buildPublicStatsUrl(req, participantId) {
     return `${baseUrl}/participants/${participantId}/stats`;
 }
 
+function calculateTotalScore(stats) {
+    return Object.values(stats || {}).reduce((sum, value) => {
+        return sum + (typeof value === "number" ? value : 0);
+    }, 0);
+}
+
 async function createParticipant(req, res, next) {
     try {
         if (!isValidParticipant(req.body)) {
@@ -509,6 +515,7 @@ async function getPublicStatsPage(req, res, next) {
                             </div>
                             <div class="nav-links">
                                 <a href="/">Home</a>
+                                <a href="/scoreboard">Scoreboard</a>
                                 <a href="/laser">Group Print View</a>
                                 <a href="/create-logo">Logo Creator</a>
                             </div>
@@ -540,6 +547,92 @@ async function getPublicStatsPage(req, res, next) {
     }
 }
 
+async function getPublicScoreboardData(req, res, next) {
+    try {
+        const requestedPage = Number.parseInt(String(req.query.page || "1"), 10);
+        const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+        const pageSize = 50;
+        const groupIdFilter = String(req.query.groupId || "").trim();
+        const search = String(req.query.search || "").trim().toLowerCase();
+
+        const [participants, groupIds] = await Promise.all([
+            participantsService.getAllParticipants(),
+            participantsService.getAllGroupIds(),
+        ]);
+
+        const visibleActivities = getVisibleActivityMetadata();
+        const titleByKey = getActivityTitleByKey();
+
+        const filtered = participants
+            .filter((participant) => {
+                if (groupIdFilter && participant.groupId !== groupIdFilter) {
+                    return false;
+                }
+
+                if (!search) {
+                    return true;
+                }
+
+                const fullName =
+                    `${participant.firstName || ""} ${participant.lastName || ""}`.trim().toLowerCase();
+                const participantCode = String(participant.participantCode || "").toLowerCase();
+                const mongoId = String(participant._id || "").toLowerCase();
+
+                return (
+                    fullName.includes(search) ||
+                    participantCode.includes(search) ||
+                    mongoId.includes(search)
+                );
+            })
+            .map((participant) => {
+                const stats = participant.stats || {};
+                return {
+                    id: String(participant._id),
+                    groupId: participant.groupId || "",
+                    participantCode: participant.participantCode || "",
+                    firstName: participant.firstName || "",
+                    lastName: participant.lastName || "",
+                    logo: participant.logo || "",
+                    totalScore: calculateTotalScore(stats),
+                    stats: visibleActivities.map((activity) => ({
+                        key: activity.key,
+                        title: titleByKey[activity.key] || activity.key,
+                        value:
+                            typeof stats[activity.key] === "number"
+                                ? stats[activity.key]
+                                : 0,
+                    })),
+                };
+            })
+            .sort((left, right) => {
+                if (right.totalScore !== left.totalScore) {
+                    return right.totalScore - left.totalScore;
+                }
+
+                return `${left.lastName} ${left.firstName}`.localeCompare(
+                    `${right.lastName} ${right.firstName}`,
+                );
+            });
+
+        const totalItems = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+        const safePage = Math.min(page, totalPages);
+        const startIndex = (safePage - 1) * pageSize;
+        const items = filtered.slice(startIndex, startIndex + pageSize);
+
+        res.json({
+            page: safePage,
+            pageSize,
+            totalItems,
+            totalPages,
+            groupIds,
+            items,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function bulkCreateParticipants(req, res, next) {
     try {
         const validation = validateBulkCreateParticipants(req.body);
@@ -548,9 +641,17 @@ async function bulkCreateParticipants(req, res, next) {
             return res.status(400).json({ error: validation.message });
         }
 
+        const normalizedGroupId = req.body.groupId.trim();
+        const exists = await participantsService.groupExists(normalizedGroupId);
+        if (exists) {
+            return res.status(409).json({
+                error: `Group ${normalizedGroupId} already exists.`,
+            });
+        }
+
         const createdParticipants =
             await participantsService.bulkCreateParticipants(
-                req.body.groupId.trim(),
+                normalizedGroupId,
                 req.body.count,
             );
 
@@ -558,6 +659,93 @@ async function bulkCreateParticipants(req, res, next) {
             message: "Participants created successfully.",
             count: createdParticipants.length,
             participants: createdParticipants,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function bulkCreateGroups(req, res, next) {
+    try {
+        const { groupPrefix, groupCount, participantsPerGroup, startIndex = 1 } =
+            req.body || {};
+
+        if (typeof groupPrefix !== "string" || groupPrefix.trim() === "") {
+            return res.status(400).json({ error: "groupPrefix is required." });
+        }
+
+        if (!Number.isInteger(groupCount) || groupCount <= 0 || groupCount > 100) {
+            return res
+                .status(400)
+                .json({ error: "groupCount must be a positive integer up to 100." });
+        }
+
+        if (
+            !Number.isInteger(participantsPerGroup) ||
+            participantsPerGroup <= 0 ||
+            participantsPerGroup > 500
+        ) {
+            return res.status(400).json({
+                error: "participantsPerGroup must be a positive integer up to 500.",
+            });
+        }
+
+        if (!Number.isInteger(startIndex) || startIndex <= 0) {
+            return res
+                .status(400)
+                .json({ error: "startIndex must be a positive integer." });
+        }
+
+        const totalParticipants = groupCount * participantsPerGroup;
+        if (totalParticipants > 5000) {
+            return res.status(400).json({
+                error: "Requested group generation is too large.",
+            });
+        }
+
+        const normalizedPrefix = groupPrefix.trim();
+        const width = Math.max(
+            3,
+            String(startIndex + groupCount - 1).length,
+        );
+        const groupIds = Array.from({ length: groupCount }, (_, index) => {
+            const number = String(startIndex + index).padStart(width, "0");
+            return `${normalizedPrefix}${number}`;
+        });
+
+        const existingChecks = await Promise.all(
+            groupIds.map((groupId) => participantsService.groupExists(groupId)),
+        );
+        const conflictingGroups = groupIds.filter(
+            (_, index) => existingChecks[index],
+        );
+
+        if (conflictingGroups.length) {
+            return res.status(409).json({
+                error: "One or more generated groups already exist.",
+                conflictingGroups,
+            });
+        }
+
+        const createdGroups = [];
+        for (const groupId of groupIds) {
+            const participants = await participantsService.bulkCreateParticipants(
+                groupId,
+                participantsPerGroup,
+            );
+            createdGroups.push({
+                groupId,
+                participantCount: participants.length,
+                participants,
+            });
+        }
+
+        res.status(201).json({
+            message: "Groups created successfully.",
+            groupPrefix: normalizedPrefix,
+            groupCount: createdGroups.length,
+            participantsPerGroup,
+            groups: createdGroups,
         });
     } catch (error) {
         next(error);
@@ -667,6 +855,7 @@ async function getPrintableGroupCodes(req, res, next) {
 }
 
 module.exports = {
+    bulkCreateGroups,
     bulkCreateParticipants,
     createParticipant,
     getAllParticipants,
@@ -677,6 +866,7 @@ module.exports = {
     getParticipantByGroupAndCode,
     getParticipantsByGroupId,
     getParticipantPublicLink,
+    getPublicScoreboardData,
     getPublicStatsPage,
     getPrintableGroupCodes,
     linkNfcIdToParticipant,

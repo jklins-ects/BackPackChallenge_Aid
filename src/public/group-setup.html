@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Group Setup</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <style>
+            :root {
+                --bg: #eef5f1;
+                --card: #ffffff;
+                --text: #173129;
+                --muted: #5f756d;
+                --accent: #1f7a5c;
+                --accent-dark: #15553f;
+                --border: #d4e2db;
+                --surface: rgba(255, 255, 255, 0.9);
+                --shadow: 0 18px 40px rgba(23, 49, 41, 0.12);
+                --danger: #b42318;
+                --success: #027a48;
+            }
+
+            * { box-sizing: border-box; }
+
+            body {
+                margin: 0;
+                font-family: Arial, Helvetica, sans-serif;
+                background:
+                    radial-gradient(circle at top, #f9fcfb 0%, #edf5f1 42%, #e3efe9 100%);
+                color: var(--text);
+                padding: 24px 16px 40px;
+            }
+
+            .page {
+                width: min(1100px, 100%);
+                margin: 0 auto;
+            }
+
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                margin: 0 auto 24px;
+                padding: 16px 18px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                box-shadow: 0 10px 26px rgba(23, 49, 41, 0.08);
+            }
+
+            .brand-block h1 {
+                margin: 0 0 4px;
+                font-size: 1.25rem;
+            }
+
+            .brand-block p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.93rem;
+            }
+
+            .nav-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .nav-links a {
+                text-decoration: none;
+                color: var(--accent-dark);
+                background: #edf6f1;
+                border-radius: 999px;
+                padding: 10px 14px;
+                font-weight: 700;
+            }
+
+            .layout {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 18px;
+            }
+
+            .card {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 22px;
+                box-shadow: var(--shadow);
+                padding: 24px;
+            }
+
+            .card h2 {
+                margin: 0 0 8px;
+                font-size: 1.45rem;
+            }
+
+            .card p {
+                margin: 0 0 18px;
+                color: var(--muted);
+                line-height: 1.55;
+            }
+
+            .form-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 14px;
+            }
+
+            label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 700;
+            }
+
+            input,
+            button {
+                font: inherit;
+            }
+
+            input {
+                width: 100%;
+                padding: 12px 14px;
+                border-radius: 12px;
+                border: 1px solid #c6d6ce;
+                background: #fff;
+                color: var(--text);
+                outline: none;
+            }
+
+            .actions {
+                margin-top: 18px;
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            button {
+                padding: 12px 16px;
+                border: 0;
+                border-radius: 12px;
+                background: var(--accent);
+                color: #fff;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            button.secondary {
+                background: #edf6f1;
+                color: var(--accent-dark);
+                border: 1px solid #c6d6ce;
+            }
+
+            .status {
+                min-height: 24px;
+                font-weight: 700;
+            }
+
+            .status.success { color: var(--success); }
+            .status.error { color: var(--danger); }
+            .status.info { color: var(--accent-dark); }
+
+            .results {
+                margin-top: 18px;
+                border-top: 1px solid var(--border);
+                padding-top: 18px;
+            }
+
+            .group-result {
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                background: #fbfefd;
+                padding: 16px;
+                margin-bottom: 12px;
+            }
+
+            .group-result h3 {
+                margin: 0 0 8px;
+            }
+
+            .group-result a {
+                color: var(--accent-dark);
+                font-weight: 700;
+            }
+
+            .code-list {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 8px;
+                margin-top: 12px;
+                font-size: 0.92rem;
+            }
+
+            .code-chip {
+                border-radius: 999px;
+                padding: 8px 10px;
+                background: #edf6f1;
+                text-align: center;
+                font-weight: 700;
+            }
+
+            @media (max-width: 900px) {
+                .layout,
+                .form-grid,
+                .code-list {
+                    grid-template-columns: 1fr;
+                }
+
+                .navbar {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <nav class="navbar" aria-label="Main navigation">
+                <div class="brand-block">
+                    <h1>ECTS Backpack Challenge 2026</h1>
+                    <p>Group setup</p>
+                </div>
+                <div class="nav-links">
+                    <a href="/">Home</a>
+                    <a href="/scoreboard">Scoreboard</a>
+                    <a href="/laser">Group Print View</a>
+                    <a href="/create-logo">Logo Creator</a>
+                </div>
+            </nav>
+
+            <div class="layout">
+                <section class="card">
+                    <h2>Create One Group</h2>
+                    <p>
+                        Create one group shell and generate participant codes. Existing
+                        groups are rejected and will not be overwritten.
+                    </p>
+
+                    <form id="singleGroupForm">
+                        <div class="form-grid">
+                            <div>
+                                <label for="singleGroupId">Group ID</label>
+                                <input id="singleGroupId" type="text" />
+                            </div>
+
+                            <div>
+                                <label for="singleCount">Participants</label>
+                                <input id="singleCount" type="number" min="1" max="500" value="30" />
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button type="submit">Create Group</button>
+                            <button id="singleExportButton" class="secondary" type="button" hidden>
+                                Export CSV
+                            </button>
+                            <div id="singleStatus" class="status info"></div>
+                        </div>
+                    </form>
+
+                    <div id="singleResults" class="results"></div>
+                </section>
+
+                <section class="card">
+                    <h2>Auto-Generate Groups</h2>
+                    <p>
+                        Generate multiple groups using a prefix plus zero-padded numbers,
+                        such as <strong>BUS001</strong>, <strong>BUS002</strong>, and so on.
+                    </p>
+
+                    <form id="multiGroupForm">
+                        <div class="form-grid">
+                            <div>
+                                <label for="groupPrefix">Group Prefix</label>
+                                <input id="groupPrefix" type="text" />
+                            </div>
+
+                            <div>
+                                <label for="groupCount">Number of Groups</label>
+                                <input id="groupCount" type="number" min="1" max="100" value="4" />
+                            </div>
+
+                            <div>
+                                <label for="participantsPerGroup">Participants Per Group</label>
+                                <input
+                                    id="participantsPerGroup"
+                                    type="number"
+                                    min="1"
+                                    max="500"
+                                    value="30"
+                                />
+                            </div>
+
+                            <div>
+                                <label for="startIndex">Starting Number</label>
+                                <input id="startIndex" type="number" min="1" value="1" />
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button type="submit">Generate Groups</button>
+                            <button id="multiExportButton" class="secondary" type="button" hidden>
+                                Export CSV
+                            </button>
+                            <div id="multiStatus" class="status info"></div>
+                        </div>
+                    </form>
+
+                    <div id="multiResults" class="results"></div>
+                </section>
+            </div>
+        </div>
+
+        <script>
+            let lastSingleGroups = [];
+            let lastMultiGroups = [];
+
+            function setStatus(element, message, type = "info") {
+                element.textContent = message;
+                element.className = `status ${type}`;
+            }
+
+            function setExportVisibility(button, groups) {
+                button.hidden = !Array.isArray(groups) || groups.length === 0;
+            }
+
+            async function fetchJson(url, options = {}) {
+                const response = await fetch(url, options);
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(
+                        data?.error ||
+                            data?.message ||
+                            `Request failed with status ${response.status}`,
+                    );
+                }
+
+                return data;
+            }
+
+            function escapeCsvCell(value) {
+                const text = String(value ?? "");
+                if (!/[",\r\n]/.test(text)) {
+                    return text;
+                }
+
+                return `"${text.replace(/"/g, '""')}"`;
+            }
+
+            function buildGroupsCsv(groups) {
+                const rows = [["groupId", "participantCode", "participantId", "firstName", "lastName"]];
+
+                for (const group of groups || []) {
+                    const participants = Array.isArray(group.participants)
+                        ? group.participants
+                        : [];
+
+                    for (const participant of participants) {
+                        rows.push([
+                            group.groupId || "",
+                            participant.participantCode || "",
+                            participant._id || "",
+                            participant.firstName || "",
+                            participant.lastName || "",
+                        ]);
+                    }
+                }
+
+                return rows
+                    .map((row) => row.map((cell) => escapeCsvCell(cell)).join(","))
+                    .join("\r\n");
+            }
+
+            function downloadGroupsCsv(groups, filename) {
+                if (!Array.isArray(groups) || !groups.length) {
+                    return;
+                }
+
+                const csv = buildGroupsCsv(groups);
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                const downloadUrl = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+
+                link.href = downloadUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(downloadUrl);
+            }
+
+            function renderGroupResults(container, groups) {
+                if (!Array.isArray(groups) || !groups.length) {
+                    container.innerHTML = "";
+                    return;
+                }
+
+                container.innerHTML = groups
+                    .map((group) => {
+                        const participants = Array.isArray(group.participants)
+                            ? group.participants
+                            : [];
+                        const codeList = participants
+                            .map(
+                                (participant) => `
+                                    <div class="code-chip">
+                                        ${group.groupId} / ${participant.participantCode}
+                                    </div>
+                                `,
+                            )
+                            .join("");
+
+                        return `
+                            <div class="group-result">
+                                <h3>${group.groupId}</h3>
+                                <div>
+                                    ${group.participantCount || participants.length} participant(s)
+                                    &middot;
+                                    <a href="/api/participants/group/${encodeURIComponent(group.groupId)}/print-codes" target="_blank" rel="noopener noreferrer">
+                                        Open printable labels
+                                    </a>
+                                </div>
+                                <div class="code-list">${codeList}</div>
+                            </div>
+                        `;
+                    })
+                    .join("");
+            }
+
+            document.getElementById("singleGroupForm").addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const statusElement = document.getElementById("singleStatus");
+                const resultsElement = document.getElementById("singleResults");
+                const exportButton = document.getElementById("singleExportButton");
+
+                try {
+                    setStatus(statusElement, "Creating group...", "info");
+                    const payload = {
+                        groupId: document.getElementById("singleGroupId").value.trim(),
+                        count: Number.parseInt(
+                            document.getElementById("singleCount").value,
+                            10,
+                        ),
+                    };
+
+                    const response = await fetchJson("/api/participants/bulk-create", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+
+                    lastSingleGroups = [
+                        {
+                            groupId: payload.groupId,
+                            participantCount: response.count,
+                            participants: response.participants || [],
+                        },
+                    ];
+                    renderGroupResults(resultsElement, lastSingleGroups);
+                    setExportVisibility(exportButton, lastSingleGroups);
+                    setStatus(statusElement, `Created ${payload.groupId}.`, "success");
+                } catch (error) {
+                    lastSingleGroups = [];
+                    setExportVisibility(exportButton, lastSingleGroups);
+                    setStatus(statusElement, error.message || "Unable to create group.", "error");
+                }
+            });
+
+            document.getElementById("multiGroupForm").addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const statusElement = document.getElementById("multiStatus");
+                const resultsElement = document.getElementById("multiResults");
+                const exportButton = document.getElementById("multiExportButton");
+
+                try {
+                    setStatus(statusElement, "Generating groups...", "info");
+                    const payload = {
+                        groupPrefix: document.getElementById("groupPrefix").value.trim(),
+                        groupCount: Number.parseInt(
+                            document.getElementById("groupCount").value,
+                            10,
+                        ),
+                        participantsPerGroup: Number.parseInt(
+                            document.getElementById("participantsPerGroup").value,
+                            10,
+                        ),
+                        startIndex: Number.parseInt(
+                            document.getElementById("startIndex").value,
+                            10,
+                        ),
+                    };
+
+                    const response = await fetchJson(
+                        "/api/participants/bulk-create-groups",
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload),
+                        },
+                    );
+
+                    lastMultiGroups = response.groups || [];
+                    renderGroupResults(resultsElement, lastMultiGroups);
+                    setExportVisibility(exportButton, lastMultiGroups);
+                    setStatus(
+                        statusElement,
+                        `Created ${response.groupCount} group(s).`,
+                        "success",
+                    );
+                } catch (error) {
+                    lastMultiGroups = [];
+                    setExportVisibility(exportButton, lastMultiGroups);
+                    setStatus(
+                        statusElement,
+                        error.message || "Unable to generate groups.",
+                        "error",
+                    );
+                }
+            });
+
+            document
+                .getElementById("singleExportButton")
+                .addEventListener("click", () => {
+                    if (!lastSingleGroups.length) {
+                        return;
+                    }
+
+                    downloadGroupsCsv(
+                        lastSingleGroups,
+                        `${lastSingleGroups[0].groupId || "group"}-participants.csv`,
+                    );
+                });
+
+            document
+                .getElementById("multiExportButton")
+                .addEventListener("click", () => {
+                    if (!lastMultiGroups.length) {
+                        return;
+                    }
+
+                    const prefix = lastMultiGroups[0]?.groupId?.replace(/\d+$/, "") || "groups";
+                    downloadGroupsCsv(lastMultiGroups, `${prefix}-participants.csv`);
+                });
+        </script>
+    </body>
+</html>

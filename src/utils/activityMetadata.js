@@ -2,7 +2,7 @@
 const ACTIVITY_METADATA = [
     { key: "activity1", title: "Drone Piloting" },
     { key: "activity2", title: "Robot Programming" },
-    { key: "activity3", title: "Temp Activity Title 3" },
+    { key: "activity3", title: "Model Airplane Piloting" },
     { key: "activity4", title: "Temp Activity Title 4" },
     { key: "activity5", title: "Temp Activity Title 5" },
     { key: "activity6", title: "Temp Activity Title 6" },
