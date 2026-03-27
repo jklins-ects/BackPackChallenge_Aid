@@ -203,8 +203,13 @@
             .participant-name {
                 font-weight: bold;
                 font-size: 0.95rem;
+                min-height: 2.5em;
                 margin-bottom: 8px;
                 word-break: break-word;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
             }
 
             .participant-stats {
@@ -217,8 +222,8 @@
                 margin-bottom: 2px;
             }
 
-            .hidden {
-                display: none !important;
+            .visibility-hidden {
+                visibility: hidden !important;
             }
 
             .empty-message {
@@ -457,11 +462,11 @@
                   }
                 </div>
 
-                <div class="participant-name ${toggleNames.checked ? "" : "hidden"}">
+                <div class="participant-name ${toggleNames.checked ? "" : "visibility-hidden"}">
                   ${safeName}
                 </div>
 
-                <div class="participant-stats ${toggleStats.checked ? "" : "hidden"}">
+                <div class="participant-stats ${toggleStats.checked ? "" : "visibility-hidden"}">
                   ${buildStatHtml(participant.stats)}
                 </div>
               </div>
@@ -503,13 +508,19 @@
 
             function refreshVisibility() {
                 document.querySelectorAll(".participant-name").forEach((el) => {
-                    el.classList.toggle("hidden", !toggleNames.checked);
+                    el.classList.toggle(
+                        "visibility-hidden",
+                        !toggleNames.checked,
+                    );
                 });
 
                 document
                     .querySelectorAll(".participant-stats")
                     .forEach((el) => {
-                        el.classList.toggle("hidden", !toggleStats.checked);
+                        el.classList.toggle(
+                            "visibility-hidden",
+                            !toggleStats.checked,
+                        );
                     });
             }
 
@@ -586,8 +597,13 @@
             .participant-name {
                 font-weight: bold;
                 font-size: 0.95rem;
+                min-height: 2.5em;
                 margin-bottom: 8px;
                 word-break: break-word;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
             }
 
             .participant-stats {
@@ -600,8 +616,8 @@
                 margin-bottom: 2px;
             }
 
-            .hidden {
-                display: none !important;
+            .visibility-hidden {
+                visibility: hidden !important;
             }
 
             .empty-message {
@@ -807,6 +823,20 @@
                                             children: [
                                                 new TextRun({
                                                     text: nameText,
+                                                    bold: true,
+                                                    size: 19,
+                                                }),
+                                            ],
+                                        }),
+                                    );
+                                } else {
+                                    children.push(
+                                        new Paragraph({
+                                            alignment: AlignmentType.CENTER,
+                                            spacing: { after: 100 },
+                                            children: [
+                                                new TextRun({
+                                                    text: " ",
                                                     bold: true,
                                                     size: 19,
                                                 }),
