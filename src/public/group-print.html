@@ -226,6 +226,10 @@
                 visibility: hidden !important;
             }
 
+            .hidden {
+                display: none !important;
+            }
+
             .empty-message {
                 padding: 20px 0;
                 color: var(--muted);
@@ -466,7 +470,7 @@
                   ${safeName}
                 </div>
 
-                <div class="participant-stats ${toggleStats.checked ? "" : "visibility-hidden"}">
+                <div class="participant-stats ${toggleStats.checked ? "" : "hidden"}">
                   ${buildStatHtml(participant.stats)}
                 </div>
               </div>
@@ -517,10 +521,7 @@
                 document
                     .querySelectorAll(".participant-stats")
                     .forEach((el) => {
-                        el.classList.toggle(
-                            "visibility-hidden",
-                            !toggleStats.checked,
-                        );
+                        el.classList.toggle("hidden", !toggleStats.checked);
                     });
             }
 
@@ -618,6 +619,10 @@
 
             .visibility-hidden {
                 visibility: hidden !important;
+            }
+
+            .hidden {
+                display: none !important;
             }
 
             .empty-message {
