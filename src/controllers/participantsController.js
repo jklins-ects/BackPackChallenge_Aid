@@ -392,45 +392,6 @@ async function getPublicStatsPage(req, res, next) {
                             margin: 0 auto;
                         }
 
-                        .navbar {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            gap: 16px;
-                            margin-bottom: 24px;
-                            padding: 16px 18px;
-                            background: var(--surface);
-                            border: 1px solid var(--border);
-                            border-radius: 18px;
-                            box-shadow: 0 10px 24px rgba(24, 50, 43, 0.08);
-                        }
-
-                        .brand-block h1 {
-                            margin: 0 0 4px;
-                            font-size: 1.2rem;
-                        }
-
-                        .brand-block p {
-                            margin: 0;
-                            color: var(--muted);
-                            font-size: 0.92rem;
-                        }
-
-                        .nav-links {
-                            display: flex;
-                            flex-wrap: wrap;
-                            gap: 10px;
-                        }
-
-                        .nav-links a {
-                            text-decoration: none;
-                            color: var(--accent-dark);
-                            background: #edf6f1;
-                            padding: 10px 14px;
-                            border-radius: 999px;
-                            font-weight: 700;
-                        }
-
                         .hero, .stats-card {
                             background: var(--card);
                             border: 1px solid var(--border);
@@ -475,6 +436,22 @@ async function getPublicStatsPage(req, res, next) {
                             margin: 0 0 16px;
                         }
 
+                        .scoreboard-link {
+                            margin-top: 20px;
+                        }
+
+                        .scoreboard-link a {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            text-decoration: none;
+                            color: #fff;
+                            background: var(--accent);
+                            padding: 12px 16px;
+                            border-radius: 999px;
+                            font-weight: 700;
+                        }
+
                         .stat-row {
                             display: flex;
                             justify-content: space-between;
@@ -497,29 +474,10 @@ async function getPublicStatsPage(req, res, next) {
                             font-weight: 700;
                             font-size: 1.1rem;
                         }
-
-                        @media (max-width: 640px) {
-                            .navbar {
-                                flex-direction: column;
-                                align-items: flex-start;
-                            }
-                        }
                     </style>
                 </head>
                 <body>
                     <div class="page">
-                        <nav class="navbar" aria-label="Main navigation">
-                            <div class="brand-block">
-                                <h1>ECTS Backpack Challenge 2026</h1>
-                                <p>Participant stats</p>
-                            </div>
-                            <div class="nav-links">
-                                <a href="/">Home</a>
-                                <a href="/scoreboard">Scoreboard</a>
-                                <a href="/laser">Group Print View</a>
-                                <a href="/create-logo">Logo Creator</a>
-                            </div>
-                        </nav>
                         <section class="hero">
                             <div class="logo">
                                 ${
@@ -537,6 +495,9 @@ async function getPublicStatsPage(req, res, next) {
                         <section class="stats-card">
                             <h2>Current Stats</h2>
                             ${statsMarkup}
+                            <div class="scoreboard-link">
+                                <a href="/scoreboard">View Scoreboard</a>
+                            </div>
                         </section>
                     </div>
                 </body>
