@@ -213,6 +213,18 @@
                 padding-top: 14px;
             }
 
+            .profile-link {
+                margin-top: 14px;
+                padding-top: 14px;
+                border-top: 1px solid #e6efea;
+            }
+
+            .profile-link a {
+                color: var(--accent-dark);
+                font-weight: 700;
+                text-decoration: none;
+            }
+
             .pagination {
                 display: flex;
                 justify-content: space-between;
@@ -380,7 +392,12 @@
                                         <div class="expand-hint">Show scores</div>
                                     </div>
                                 </summary>
-                                <div class="score-details">${detailRows}</div>
+                                <div class="score-details">
+                                    ${detailRows}
+                                    <div class="profile-link">
+                                        <a href="/participants/${participant.id}/stats">View participant profile</a>
+                                    </div>
+                                </div>
                             </details>
                         `;
                     })

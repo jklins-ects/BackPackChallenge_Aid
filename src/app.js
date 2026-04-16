@@ -44,6 +44,7 @@ app.get("/scoreboard", (req, res) => {
 
 app.get("/api/public/scoreboard", participantsController.getPublicScoreboardData);
 
+app.get("/participants", participantsController.redirectPublicStatsByQuery);
 app.get("/participants/:id/stats", participantsController.getPublicStatsPage);
 app.get("/", (req, res) => {
     return requireWebAuth(req, res, () =>

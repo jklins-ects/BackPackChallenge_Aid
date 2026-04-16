@@ -254,6 +254,7 @@ router.get("/:id/public-link", controller.getParticipantPublicLink);
  *         description: Printable HTML code sheet
  */
 router.get("/group/:groupId/print-codes", controller.getPrintableGroupCodes);
+router.patch("/group/:groupId", controller.renameGroup);
 
 /**
  * @swagger

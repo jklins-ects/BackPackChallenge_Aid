@@ -321,6 +321,32 @@ async function getParticipantPublicLink(req, res, next) {
     }
 }
 
+async function redirectPublicStatsByQuery(req, res, next) {
+    try {
+        const groupId = String(req.query.gid || "").trim();
+        const participantCode = String(req.query.pid || "").trim();
+
+        if (!groupId || !participantCode) {
+            return res
+                .status(400)
+                .send("Both gid and pid query parameters are required.");
+        }
+
+        const participant = await participantsService.getParticipantByGroupAndCode(
+            groupId,
+            participantCode,
+        );
+
+        if (!participant) {
+            return res.status(404).send("Participant not found.");
+        }
+
+        return res.redirect(`/participants/${participant._id}/stats`);
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function getPublicStatsPage(req, res, next) {
     try {
         const { id } = req.params;
@@ -713,6 +739,55 @@ async function bulkCreateGroups(req, res, next) {
     }
 }
 
+async function renameGroup(req, res, next) {
+    try {
+        const currentGroupId = String(req.params.groupId || "").trim();
+        const newGroupId = String(req.body?.newGroupId || "").trim();
+
+        if (!currentGroupId) {
+            return res.status(400).json({ error: "groupId is required." });
+        }
+
+        if (!newGroupId) {
+            return res.status(400).json({ error: "newGroupId is required." });
+        }
+
+        if (currentGroupId === newGroupId) {
+            const participants =
+                await participantsService.getParticipantsByGroupId(currentGroupId);
+            return res.json({
+                message: "Group ID is unchanged.",
+                groupId: currentGroupId,
+                participants,
+            });
+        }
+
+        const targetExists = await participantsService.groupExists(newGroupId);
+        if (targetExists) {
+            return res.status(409).json({
+                error: `Group ${newGroupId} already exists.`,
+            });
+        }
+
+        const renamedParticipants = await participantsService.renameGroupId(
+            currentGroupId,
+            newGroupId,
+        );
+
+        if (!renamedParticipants) {
+            return res.status(404).json({ error: "Group not found." });
+        }
+
+        res.json({
+            message: `Renamed ${currentGroupId} to ${newGroupId}.`,
+            groupId: newGroupId,
+            participants: renamedParticipants,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function getPrintableGroupCodes(req, res, next) {
     try {
         const { groupId } = req.params;
@@ -827,10 +902,12 @@ module.exports = {
     getParticipantByGroupAndCode,
     getParticipantsByGroupId,
     getParticipantPublicLink,
+    redirectPublicStatsByQuery,
     getPublicScoreboardData,
     getPublicStatsPage,
     getPrintableGroupCodes,
     linkNfcIdToParticipant,
+    renameGroup,
     updateParticipantById,
     patchParticipantById,
     deleteParticipantById,

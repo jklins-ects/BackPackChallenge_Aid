@@ -113,11 +113,13 @@
             }
 
             input,
+            select,
             button {
                 font: inherit;
             }
 
-            input {
+            input,
+            select {
                 width: 100%;
                 padding: 12px 14px;
                 border-radius: 12px;
@@ -199,10 +201,75 @@
                 font-weight: 700;
             }
 
+            .card.full-width {
+                grid-column: 1 / -1;
+            }
+
+            .manage-toolbar {
+                display: grid;
+                grid-template-columns: 1.2fr 1fr auto;
+                gap: 14px;
+                align-items: end;
+            }
+
+            .manage-actions {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin-top: 18px;
+                align-items: center;
+            }
+
+            .manage-summary {
+                margin-top: 18px;
+                color: var(--muted);
+                font-weight: 700;
+            }
+
+            .table-wrap {
+                margin-top: 18px;
+                overflow-x: auto;
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                background: #fbfefd;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 720px;
+            }
+
+            th,
+            td {
+                padding: 12px;
+                border-bottom: 1px solid var(--border);
+                text-align: left;
+                vertical-align: middle;
+            }
+
+            th {
+                background: #edf6f1;
+                color: var(--accent-dark);
+                font-size: 0.92rem;
+            }
+
+            td input {
+                min-width: 120px;
+            }
+
+            tr:last-child td {
+                border-bottom: 0;
+            }
+
             @media (max-width: 900px) {
                 .layout,
                 .form-grid,
                 .code-list {
+                    grid-template-columns: 1fr;
+                }
+
+                .manage-toolbar {
                     grid-template-columns: 1fr;
                 }
 
@@ -309,12 +376,81 @@
 
                     <div id="multiResults" class="results"></div>
                 </section>
+
+                <section class="card full-width">
+                    <h2>View and Edit Existing Groups</h2>
+                    <p>
+                        Load any existing group, export its current CSV, rename the
+                        group without overwriting another group, and edit participant
+                        codes or names in place.
+                    </p>
+
+                    <div class="manage-toolbar">
+                        <div>
+                            <label for="existingGroupSelect">Existing Group</label>
+                            <select id="existingGroupSelect">
+                                <option value="">Loading groups...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="renameGroupId">Rename Group To</label>
+                            <input id="renameGroupId" type="text" placeholder="New group ID" />
+                        </div>
+
+                        <div>
+                            <button id="loadExistingGroupButton" type="button">Load Group</button>
+                        </div>
+                    </div>
+
+                    <div class="manage-actions">
+                        <button id="renameGroupButton" type="button">Rename Group</button>
+                        <button id="saveExistingGroupButton" class="secondary" type="button">
+                            Save Participant Changes
+                        </button>
+                        <button id="exportExistingGroupButton" class="secondary" type="button">
+                            Export Existing Group CSV
+                        </button>
+                        <a
+                            id="existingPrintLink"
+                            class="secondary"
+                            href="#"
+                            hidden
+                            style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;"
+                        >
+                            Open Printable Labels
+                        </a>
+                        <div id="existingStatus" class="status info"></div>
+                    </div>
+
+                    <div id="existingSummary" class="manage-summary">
+                        Select a group to load its participants.
+                    </div>
+
+                    <div id="existingTableWrap" class="table-wrap" hidden>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Participant ID</th>
+                                    <th>Participant Code</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th>NFC ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="existingGroupTableBody"></tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
         </div>
 
         <script>
             let lastSingleGroups = [];
             let lastMultiGroups = [];
+            let availableGroupIds = [];
+            let loadedExistingGroup = null;
+            let loadedExistingParticipants = [];
 
             function setStatus(element, message, type = "info") {
                 element.textContent = message;
@@ -429,6 +565,210 @@
                     .join("");
             }
 
+            function renderExistingGroupTable(participants) {
+                const tableWrap = document.getElementById("existingTableWrap");
+                const tableBody = document.getElementById("existingGroupTableBody");
+                const summary = document.getElementById("existingSummary");
+                const printLink = document.getElementById("existingPrintLink");
+
+                if (!loadedExistingGroup || !participants.length) {
+                    tableBody.innerHTML = "";
+                    tableWrap.hidden = true;
+                    printLink.hidden = true;
+                    summary.textContent = loadedExistingGroup
+                        ? `No participants found for ${loadedExistingGroup}.`
+                        : "Select a group to load its participants.";
+                    return;
+                }
+
+                summary.textContent = `${loadedExistingGroup} loaded with ${participants.length} participant(s).`;
+                tableWrap.hidden = false;
+                printLink.hidden = false;
+                printLink.href = `/api/participants/group/${encodeURIComponent(loadedExistingGroup)}/print-codes`;
+
+                tableBody.innerHTML = participants
+                    .map(
+                        (participant) => `
+                            <tr data-participant-id="${participant._id}">
+                                <td>${participant._id}</td>
+                                <td>
+                                    <input
+                                        type="text"
+                                        data-field="participantCode"
+                                        value="${participant.participantCode || ""}"
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        type="text"
+                                        data-field="firstName"
+                                        value="${participant.firstName || ""}"
+                                    />
+                                </td>
+                                <td>
+                                    <input
+                                        type="text"
+                                        data-field="lastName"
+                                        value="${participant.lastName || ""}"
+                                    />
+                                </td>
+                                <td>${participant.nfcId || ""}</td>
+                            </tr>
+                        `,
+                    )
+                    .join("");
+            }
+
+            function populateExistingGroupOptions(selectedGroupId = "") {
+                const select = document.getElementById("existingGroupSelect");
+                select.innerHTML = `<option value="">Select a group</option>`;
+
+                availableGroupIds.forEach((groupId) => {
+                    select.appendChild(new Option(groupId, groupId));
+                });
+
+                if (selectedGroupId && availableGroupIds.includes(selectedGroupId)) {
+                    select.value = selectedGroupId;
+                }
+            }
+
+            async function refreshGroupOptions(selectedGroupId = "") {
+                availableGroupIds = await fetchJson("/api/participants/groups");
+                populateExistingGroupOptions(selectedGroupId);
+            }
+
+            async function loadExistingGroup(groupId) {
+                if (!groupId) {
+                    loadedExistingGroup = null;
+                    loadedExistingParticipants = [];
+                    renderExistingGroupTable([]);
+                    return;
+                }
+
+                const participants = await fetchJson(
+                    `/api/participants/group/${encodeURIComponent(groupId)}`,
+                );
+                loadedExistingGroup = groupId;
+                loadedExistingParticipants = participants;
+                document.getElementById("renameGroupId").value = groupId;
+                renderExistingGroupTable(participants);
+            }
+
+            async function renameExistingGroup() {
+                const statusElement = document.getElementById("existingStatus");
+                const currentGroupId = document.getElementById("existingGroupSelect").value;
+                const newGroupId = document.getElementById("renameGroupId").value.trim();
+
+                if (!currentGroupId) {
+                    setStatus(statusElement, "Select a group before renaming.", "error");
+                    return;
+                }
+
+                if (!newGroupId) {
+                    setStatus(statusElement, "Enter a new group ID.", "error");
+                    return;
+                }
+
+                if (currentGroupId !== newGroupId && availableGroupIds.includes(newGroupId)) {
+                    setStatus(
+                        statusElement,
+                        `Group ${newGroupId} already exists.`,
+                        "error",
+                    );
+                    return;
+                }
+
+                setStatus(statusElement, "Renaming group...", "info");
+                const response = await fetchJson(
+                    `/api/participants/group/${encodeURIComponent(currentGroupId)}`,
+                    {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ newGroupId }),
+                    },
+                );
+
+                loadedExistingGroup = response.groupId;
+                loadedExistingParticipants = response.participants || [];
+                await refreshGroupOptions(response.groupId);
+                renderExistingGroupTable(loadedExistingParticipants);
+                setStatus(statusElement, response.message, "success");
+            }
+
+            function collectExistingParticipantEdits() {
+                const rows = Array.from(
+                    document.querySelectorAll("#existingGroupTableBody tr"),
+                );
+
+                return rows.map((row) => ({
+                    id: row.dataset.participantId,
+                    participantCode: row.querySelector('[data-field="participantCode"]').value.trim(),
+                    firstName: row.querySelector('[data-field="firstName"]').value.trim(),
+                    lastName: row.querySelector('[data-field="lastName"]').value.trim(),
+                }));
+            }
+
+            async function saveExistingGroupEdits() {
+                const statusElement = document.getElementById("existingStatus");
+
+                if (!loadedExistingGroup) {
+                    setStatus(statusElement, "Select a group before saving changes.", "error");
+                    return;
+                }
+
+                const editedRows = collectExistingParticipantEdits();
+                const updates = [];
+
+                for (const row of editedRows) {
+                    const original = loadedExistingParticipants.find(
+                        (participant) => String(participant._id) === row.id,
+                    );
+
+                    if (!original) {
+                        continue;
+                    }
+
+                    const patch = {};
+                    if ((original.participantCode || "") !== row.participantCode) {
+                        patch.participantCode = row.participantCode;
+                    }
+                    if ((original.firstName || "") !== row.firstName) {
+                        patch.firstName = row.firstName;
+                    }
+                    if ((original.lastName || "") !== row.lastName) {
+                        patch.lastName = row.lastName;
+                    }
+
+                    if (Object.keys(patch).length) {
+                        updates.push({ id: row.id, patch });
+                    }
+                }
+
+                if (!updates.length) {
+                    setStatus(statusElement, "No participant changes to save.", "info");
+                    return;
+                }
+
+                setStatus(statusElement, "Saving participant changes...", "info");
+
+                await Promise.all(
+                    updates.map((update) =>
+                        fetchJson(`/api/participants/${encodeURIComponent(update.id)}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(update.patch),
+                        }),
+                    ),
+                );
+
+                await loadExistingGroup(loadedExistingGroup);
+                setStatus(
+                    statusElement,
+                    `Saved ${updates.length} participant update(s).`,
+                    "success",
+                );
+            }
+
             document.getElementById("singleGroupForm").addEventListener("submit", async (event) => {
                 event.preventDefault();
 
@@ -461,6 +801,7 @@
                     ];
                     renderGroupResults(resultsElement, lastSingleGroups);
                     setExportVisibility(exportButton, lastSingleGroups);
+                    await refreshGroupOptions(payload.groupId);
                     setStatus(statusElement, `Created ${payload.groupId}.`, "success");
                 } catch (error) {
                     lastSingleGroups = [];
@@ -506,6 +847,7 @@
                     lastMultiGroups = response.groups || [];
                     renderGroupResults(resultsElement, lastMultiGroups);
                     setExportVisibility(exportButton, lastMultiGroups);
+                    await refreshGroupOptions(lastMultiGroups[0]?.groupId || "");
                     setStatus(
                         statusElement,
                         `Created ${response.groupCount} group(s).`,
@@ -545,6 +887,84 @@
                     const prefix = lastMultiGroups[0]?.groupId?.replace(/\d+$/, "") || "groups";
                     downloadGroupsCsv(lastMultiGroups, `${prefix}-participants.csv`);
                 });
+
+            document
+                .getElementById("loadExistingGroupButton")
+                .addEventListener("click", async () => {
+                    const statusElement = document.getElementById("existingStatus");
+                    const groupId = document.getElementById("existingGroupSelect").value;
+
+                    try {
+                        setStatus(statusElement, "Loading group...", "info");
+                        await loadExistingGroup(groupId);
+                        setStatus(
+                            statusElement,
+                            groupId ? `Loaded ${groupId}.` : "Select a group to load.",
+                            groupId ? "success" : "info",
+                        );
+                    } catch (error) {
+                        setStatus(
+                            statusElement,
+                            error.message || "Unable to load group.",
+                            "error",
+                        );
+                    }
+                });
+
+            document
+                .getElementById("renameGroupButton")
+                .addEventListener("click", async () => {
+                    try {
+                        await renameExistingGroup();
+                    } catch (error) {
+                        setStatus(
+                            document.getElementById("existingStatus"),
+                            error.message || "Unable to rename group.",
+                            "error",
+                        );
+                    }
+                });
+
+            document
+                .getElementById("saveExistingGroupButton")
+                .addEventListener("click", async () => {
+                    try {
+                        await saveExistingGroupEdits();
+                    } catch (error) {
+                        setStatus(
+                            document.getElementById("existingStatus"),
+                            error.message || "Unable to save participant changes.",
+                            "error",
+                        );
+                    }
+                });
+
+            document
+                .getElementById("exportExistingGroupButton")
+                .addEventListener("click", () => {
+                    if (!loadedExistingGroup || !loadedExistingParticipants.length) {
+                        return;
+                    }
+
+                    downloadGroupsCsv(
+                        [
+                            {
+                                groupId: loadedExistingGroup,
+                                participantCount: loadedExistingParticipants.length,
+                                participants: loadedExistingParticipants,
+                            },
+                        ],
+                        `${loadedExistingGroup}-participants.csv`,
+                    );
+                });
+
+            refreshGroupOptions().catch((error) => {
+                setStatus(
+                    document.getElementById("existingStatus"),
+                    error.message || "Unable to load existing groups.",
+                    "error",
+                );
+            });
         </script>
     </body>
 </html>

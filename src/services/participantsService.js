@@ -68,6 +68,30 @@ async function groupExists(groupId) {
     return Boolean(existing);
 }
 
+async function renameGroupId(currentGroupId, newGroupId) {
+    const collection = await getParticipantsCollection();
+
+    const existingParticipants = await collection
+        .find({ groupId: currentGroupId })
+        .toArray();
+
+    if (!existingParticipants.length) {
+        return null;
+    }
+
+    await collection.updateMany(
+        { groupId: currentGroupId },
+        {
+            $set: {
+                groupId: newGroupId,
+                updatedAt: new Date(),
+            },
+        },
+    );
+
+    return collection.find({ groupId: newGroupId }).toArray();
+}
+
 async function updateParticipantById(id, participant) {
     const collection = await getParticipantsCollection();
 
@@ -238,6 +262,7 @@ module.exports = {
     getParticipantByGroupAndCode,
     getParticipantsByGroupId,
     groupExists,
+    renameGroupId,
     linkNfcIdToParticipant,
     updateParticipantById,
     patchParticipantById,
