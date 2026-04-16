@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Event Scoring</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <style>
+            :root {
+                --bg: #eef5f1;
+                --card: #ffffff;
+                --text: #173129;
+                --muted: #5f756d;
+                --accent: #1f7a5c;
+                --accent-dark: #15553f;
+                --accent-soft: #e5f4ee;
+                --border: #d4e2db;
+                --surface: rgba(255, 255, 255, 0.9);
+                --shadow: 0 18px 40px rgba(23, 49, 41, 0.12);
+                --warning: #b54708;
+                --danger: #b42318;
+                --success: #027a48;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: Arial, Helvetica, sans-serif;
+                color: var(--text);
+                background:
+                    radial-gradient(circle at top, #f9fcfb 0%, #edf5f1 42%, #e3efe9 100%);
+            }
+
+            .page {
+                width: min(1160px, calc(100% - 32px));
+                margin: 0 auto;
+                padding: 24px 0 40px;
+            }
+
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 24px;
+                padding: 16px 18px;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                box-shadow: 0 10px 26px rgba(23, 49, 41, 0.08);
+            }
+
+            .brand-block h1 {
+                margin: 0 0 4px;
+                font-size: 1.25rem;
+            }
+
+            .brand-block p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.93rem;
+            }
+
+            .nav-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .nav-links a {
+                text-decoration: none;
+                color: var(--accent-dark);
+                background: #edf6f1;
+                border-radius: 999px;
+                padding: 10px 14px;
+                font-weight: 700;
+            }
+
+            .hero,
+            .scoring-shell {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 22px;
+                box-shadow: var(--shadow);
+            }
+
+            .hero {
+                padding: 28px;
+                margin-bottom: 20px;
+            }
+
+            .hero h2 {
+                margin: 0 0 10px;
+                font-size: 2rem;
+            }
+
+            .hero p {
+                margin: 0;
+                color: var(--muted);
+                line-height: 1.6;
+                max-width: 760px;
+            }
+
+            .scoring-shell {
+                padding: 24px;
+            }
+
+            .control-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 16px;
+                margin-bottom: 20px;
+            }
+
+            .field-card {
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                background: linear-gradient(180deg, #fbfefd 0%, #f2f8f5 100%);
+                padding: 18px;
+            }
+
+            .field-card h3 {
+                margin: 0 0 14px;
+                font-size: 1rem;
+            }
+
+            label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 700;
+            }
+
+            input,
+            select,
+            button {
+                font: inherit;
+            }
+
+            input,
+            select {
+                width: 100%;
+                padding: 12px 14px;
+                border: 1px solid #c6d6ce;
+                border-radius: 12px;
+                background: #fff;
+                color: var(--text);
+            }
+
+            .field-help {
+                margin-top: 8px;
+                color: var(--muted);
+                font-size: 0.9rem;
+            }
+
+            .status-banner {
+                border-radius: 16px;
+                padding: 14px 16px;
+                margin-bottom: 20px;
+                background: #edf6f1;
+                color: var(--accent-dark);
+                font-weight: 700;
+            }
+
+            .status-banner.error {
+                background: #fef3f2;
+                color: var(--danger);
+            }
+
+            .tabs {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 18px;
+            }
+
+            .tab-button {
+                border: 1px solid var(--border);
+                border-radius: 999px;
+                background: #f6fbf8;
+                color: var(--accent-dark);
+                padding: 10px 14px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .tab-button.active {
+                background: var(--accent);
+                color: #fff;
+                border-color: var(--accent);
+            }
+
+            .tab-panel {
+                display: none;
+            }
+
+            .tab-panel.active {
+                display: block;
+            }
+
+            .panel-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+                gap: 20px;
+            }
+
+            .panel-card {
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                padding: 20px;
+                background: #fff;
+            }
+
+            .panel-card h3 {
+                margin: 0 0 14px;
+                font-size: 1.1rem;
+            }
+
+            .activity-kicker {
+                margin: 0 0 6px;
+                font-size: 0.86rem;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--accent);
+                font-weight: 700;
+            }
+
+            .score-row {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 12px;
+                align-items: end;
+                margin-top: 16px;
+            }
+
+            .submit-button {
+                border: 0;
+                border-radius: 12px;
+                background: var(--accent);
+                color: #fff;
+                padding: 12px 16px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .submit-button:hover {
+                background: var(--accent-dark);
+            }
+
+            .preview-name {
+                margin: 0 0 14px;
+                font-size: 1.05rem;
+                font-weight: 700;
+                color: #204d45;
+            }
+
+            .stats-list {
+                display: grid;
+                gap: 6px;
+            }
+
+            .stat-line {
+                padding: 6px 8px;
+                border-radius: 8px;
+                color: var(--text);
+            }
+
+            .stat-line.active {
+                background: var(--accent-soft);
+            }
+
+            .stat-line strong {
+                color: #204d45;
+            }
+
+            .history-box {
+                margin-top: 18px;
+                border-top: 1px solid var(--border);
+                padding-top: 16px;
+            }
+
+            .history-box h4 {
+                margin: 0 0 10px;
+                font-size: 0.98rem;
+            }
+
+            .history-log {
+                min-height: 120px;
+                max-height: 220px;
+                overflow: auto;
+                background: #fbfefd;
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                padding: 12px;
+                white-space: pre-wrap;
+                line-height: 1.45;
+            }
+
+            .muted {
+                color: var(--muted);
+            }
+
+            @media (max-width: 860px) {
+                .navbar {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .control-grid,
+                .panel-grid,
+                .score-row {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <nav class="navbar" aria-label="Main navigation">
+                <div class="brand-block">
+                    <h1>ECTS Backpack Challenge 2026</h1>
+                    <p>Event scoring</p>
+                </div>
+                <div class="nav-links">
+                    <a href="/">Home</a>
+                    <a href="/score-events">Event Scoring</a>
+                    <a href="/group-setup">Group Setup</a>
+                    <a href="/laser">Group Print View</a>
+                    <a href="/create-logo">Logo Creator</a>
+                </div>
+            </nav>
+
+            <section class="hero">
+                <h2>Score Events</h2>
+                <p>
+                    Select a group and participant, switch between event tabs, and set
+                    the current score value for that event. Each submission replaces the
+                    existing value for that participant and event.
+                </p>
+            </section>
+
+            <section class="scoring-shell">
+                <div class="status-banner" id="statusBanner">
+                    Loading event scoring tools...
+                </div>
+
+                <div class="control-grid">
+                    <section class="field-card">
+                        <h3>Participant Selection</h3>
+                        <label for="groupSelect">Group</label>
+                        <select id="groupSelect">
+                            <option value="">Loading groups...</option>
+                        </select>
+
+                        <label for="participantSelect" style="margin-top: 14px;">Participant</label>
+                        <select id="participantSelect">
+                            <option value="">Select a group first</option>
+                        </select>
+                    </section>
+
+                    <section class="field-card">
+                        <h3>Station</h3>
+                        <label for="stationIdInput">Station ID</label>
+                        <input id="stationIdInput" type="text" value="web-admin" />
+                        <div class="field-help">
+                            This value is sent with each score update for event history.
+                        </div>
+                    </section>
+
+                    <section class="field-card">
+                        <h3>Current Participant</h3>
+                        <div id="selectionSummary" class="muted">
+                            No participant selected yet.
+                        </div>
+                    </section>
+                </div>
+
+                <div class="tabs" id="tabsContainer"></div>
+                <div id="tabPanels"></div>
+            </section>
+        </div>
+
+        <script>
+            const STORAGE_KEY = "ects-score-events-station-id";
+            const groupSelect = document.getElementById("groupSelect");
+            const participantSelect = document.getElementById("participantSelect");
+            const stationIdInput = document.getElementById("stationIdInput");
+            const selectionSummary = document.getElementById("selectionSummary");
+            const statusBanner = document.getElementById("statusBanner");
+            const tabsContainer = document.getElementById("tabsContainer");
+            const tabPanels = document.getElementById("tabPanels");
+
+            let activities = [];
+            let activityTitleByKey = {};
+            let participantsByGroup = new Map();
+            let currentParticipant = null;
+            let currentActivityKey = "";
+
+            function setStatus(message, type = "") {
+                statusBanner.textContent = message;
+                statusBanner.className = `status-banner ${type}`.trim();
+            }
+
+            async function fetchJson(url, options = {}) {
+                const response = await fetch(url, options);
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(
+                        data?.error ||
+                            data?.message ||
+                            `Request failed: ${response.status} ${response.statusText}`,
+                    );
+                }
+
+                return data;
+            }
+
+            function participantLabel(participant) {
+                const fullName =
+                    `${participant.firstName || ""} ${participant.lastName || ""}`.trim();
+                const labelName = fullName || "(No name yet)";
+                return `${labelName} - ${participant.participantCode || ""}`;
+            }
+
+            function updateSelectionSummary() {
+                if (!currentParticipant) {
+                    selectionSummary.textContent = "No participant selected yet.";
+                    return;
+                }
+
+                const fullName =
+                    `${currentParticipant.firstName || ""} ${currentParticipant.lastName || ""}`.trim();
+                selectionSummary.textContent = fullName
+                    ? `${fullName} (${currentParticipant.groupId} / ${currentParticipant.participantCode})`
+                    : `${currentParticipant.groupId} / ${currentParticipant.participantCode}`;
+            }
+
+            function buildStatsHtml(participant, activeActivityKey) {
+                if (!participant) {
+                    return `<div class="muted">Select a participant to preview known scores.</div>`;
+                }
+
+                const rows = activities
+                    .map((activity) => {
+                        const value =
+                            typeof participant.stats?.[activity.key] === "number"
+                                ? participant.stats[activity.key]
+                                : 0;
+                        const isActive = activity.key === activeActivityKey;
+                        return `
+                            <div class="stat-line ${isActive ? "active" : ""}">
+                                <strong>${activity.title}:</strong> ${value}
+                            </div>
+                        `;
+                    })
+                    .join("");
+
+                return rows || `<div class="muted">No visible stats configured.</div>`;
+            }
+
+            function appendHistory(activityKey, message) {
+                const historyLog = document.querySelector(
+                    `[data-history-for="${activityKey}"]`,
+                );
+                if (!historyLog) {
+                    return;
+                }
+
+                const timestamp = new Date().toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                });
+                historyLog.textContent = `[${timestamp}] ${message}\n${historyLog.textContent}`.trim();
+            }
+
+            function refreshAllPreviews() {
+                updateSelectionSummary();
+
+                for (const activity of activities) {
+                    const previewName = document.querySelector(
+                        `[data-preview-name-for="${activity.key}"]`,
+                    );
+                    const previewStats = document.querySelector(
+                        `[data-preview-stats-for="${activity.key}"]`,
+                    );
+
+                    if (!previewName || !previewStats) {
+                        continue;
+                    }
+
+                    if (!currentParticipant) {
+                        previewName.textContent = "No participant loaded";
+                    } else {
+                        previewName.textContent = participantLabel(currentParticipant);
+                    }
+
+                    previewStats.innerHTML = buildStatsHtml(
+                        currentParticipant,
+                        activity.key,
+                    );
+                }
+            }
+
+            function upsertParticipant(updatedParticipant) {
+                if (!updatedParticipant || !updatedParticipant.groupId) {
+                    return;
+                }
+
+                const groupParticipants =
+                    participantsByGroup.get(updatedParticipant.groupId) || [];
+                const updatedId = String(updatedParticipant._id || "");
+                const nextGroupParticipants = [...groupParticipants];
+                const existingIndex = nextGroupParticipants.findIndex(
+                    (participant) => String(participant._id || "") === updatedId,
+                );
+
+                if (existingIndex >= 0) {
+                    nextGroupParticipants[existingIndex] = updatedParticipant;
+                } else {
+                    nextGroupParticipants.push(updatedParticipant);
+                }
+
+                participantsByGroup.set(updatedParticipant.groupId, nextGroupParticipants);
+
+                if (
+                    currentParticipant &&
+                    String(currentParticipant._id || "") === updatedId
+                ) {
+                    currentParticipant = updatedParticipant;
+                }
+
+                if (groupSelect.value === updatedParticipant.groupId) {
+                    populateParticipants(updatedParticipant.groupId, updatedId);
+                } else {
+                    refreshAllPreviews();
+                }
+            }
+
+            function populateParticipants(groupId, preferredParticipantId = "") {
+                const participants = participantsByGroup.get(groupId) || [];
+                participantSelect.innerHTML = "";
+
+                if (!groupId) {
+                    participantSelect.innerHTML =
+                        `<option value="">Select a group first</option>`;
+                    currentParticipant = null;
+                    refreshAllPreviews();
+                    return;
+                }
+
+                if (!participants.length) {
+                    participantSelect.innerHTML =
+                        `<option value="">No participants found</option>`;
+                    currentParticipant = null;
+                    refreshAllPreviews();
+                    return;
+                }
+
+                participantSelect.appendChild(
+                    new Option("Select a participant", ""),
+                );
+
+                for (const participant of participants) {
+                    participantSelect.appendChild(
+                        new Option(
+                            participantLabel(participant),
+                            String(participant._id || ""),
+                        ),
+                    );
+                }
+
+                participantSelect.value = preferredParticipantId || "";
+                if (
+                    preferredParticipantId &&
+                    !Array.from(participantSelect.options).some(
+                        (option) => option.value === preferredParticipantId,
+                    )
+                ) {
+                    participantSelect.value = "";
+                }
+
+                const selectedId = participantSelect.value;
+                currentParticipant =
+                    participants.find(
+                        (participant) => String(participant._id || "") === selectedId,
+                    ) || null;
+
+                refreshAllPreviews();
+            }
+
+            async function ensureParticipantsForGroup(groupId) {
+                if (!groupId || participantsByGroup.has(groupId)) {
+                    return;
+                }
+
+                const participants = await fetchJson(
+                    `/api/participants/group/${encodeURIComponent(groupId)}`,
+                );
+                participantsByGroup.set(groupId, participants);
+            }
+
+            function renderTabs() {
+                tabsContainer.innerHTML = "";
+                tabPanels.innerHTML = "";
+
+                activities.forEach((activity, index) => {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = `tab-button ${index === 0 ? "active" : ""}`;
+                    button.textContent = activity.title;
+                    button.dataset.activityKey = activity.key;
+                    tabsContainer.appendChild(button);
+
+                    const panel = document.createElement("section");
+                    panel.className = `tab-panel ${index === 0 ? "active" : ""}`;
+                    panel.dataset.activityKey = activity.key;
+                    panel.innerHTML = `
+                        <div class="panel-grid">
+                            <div class="panel-card">
+                                <p class="activity-kicker">Current Event</p>
+                                <h3>${activity.title}</h3>
+                                <div class="score-row">
+                                    <div>
+                                        <label for="score-input-${activity.key}">Set Score Value</label>
+                                        <input id="score-input-${activity.key}" type="number" step="any" value="0" />
+                                    </div>
+                                    <button class="submit-button" type="button" data-submit-for="${activity.key}">
+                                        Set Score
+                                    </button>
+                                </div>
+                                <div class="history-box">
+                                    <h4>Recent Activity</h4>
+                                    <div class="history-log" data-history-for="${activity.key}">
+No score updates yet for this event.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel-card">
+                                <h3>Known Participant Stats</h3>
+                                <div class="preview-name" data-preview-name-for="${activity.key}">
+                                    No participant loaded
+                                </div>
+                                <div class="stats-list" data-preview-stats-for="${activity.key}">
+                                    <div class="muted">Select a participant to preview known scores.</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    tabPanels.appendChild(panel);
+                });
+
+                currentActivityKey = activities[0]?.key || "";
+                refreshAllPreviews();
+            }
+
+            function setActiveTab(activityKey) {
+                currentActivityKey = activityKey;
+
+                document.querySelectorAll(".tab-button").forEach((button) => {
+                    button.classList.toggle(
+                        "active",
+                        button.dataset.activityKey === activityKey,
+                    );
+                });
+
+                document.querySelectorAll(".tab-panel").forEach((panel) => {
+                    panel.classList.toggle(
+                        "active",
+                        panel.dataset.activityKey === activityKey,
+                    );
+                });
+
+                refreshAllPreviews();
+            }
+
+            async function submitScore(activityKey) {
+                if (!groupSelect.value || !currentParticipant) {
+                    setStatus(
+                        "Choose a group and participant before setting a score.",
+                        "error",
+                    );
+                    return;
+                }
+
+                const input = document.querySelector(`#score-input-${activityKey}`);
+                const pointsText = input?.value?.trim() || "";
+                if (!pointsText) {
+                    setStatus("Enter a score value before submitting.", "error");
+                    return;
+                }
+
+                const points = Number(pointsText);
+                if (Number.isNaN(points)) {
+                    setStatus("Score value must be numeric.", "error");
+                    return;
+                }
+
+                const stationId = stationIdInput.value.trim() || "web-admin";
+
+                try {
+                    setStatus(
+                        `Setting ${activityTitleByKey[activityKey] || activityKey} for ${participantLabel(currentParticipant)}...`,
+                    );
+
+                    const response = await fetchJson("/api/activities/award-by-code", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            groupId: groupSelect.value,
+                            participantCode: currentParticipant.participantCode,
+                            activityKey,
+                            points,
+                            stationId,
+                        }),
+                    });
+
+                    upsertParticipant(response.participant);
+                    const participantName = participantLabel(response.participant);
+                    const activityTitle =
+                        activityTitleByKey[activityKey] || activityKey;
+                    setStatus(
+                        `Set ${activityTitle} to ${points} for ${participantName}.`,
+                    );
+                    appendHistory(
+                        activityKey,
+                        `Set ${activityTitle} to ${points} for ${participantName}.`,
+                    );
+                } catch (error) {
+                    setStatus(error.message || "Unable to set score.", "error");
+                }
+            }
+
+            async function initializeGroups() {
+                const groups = await fetchJson("/api/participants/groups");
+                groupSelect.innerHTML = `<option value="">Select a group</option>`;
+                groups.forEach((groupId) => {
+                    groupSelect.appendChild(new Option(groupId, groupId));
+                });
+            }
+
+            async function initializeActivities() {
+                const metadata = await fetchJson("/api/activities/metadata");
+                activities = Array.isArray(metadata.visibleActivities)
+                    ? metadata.visibleActivities
+                    : Array.isArray(metadata.activities)
+                      ? metadata.activities.filter(
+                            (activity) =>
+                                typeof activity?.title === "string" &&
+                                activity.title.trim() !== "",
+                        )
+                      : [];
+                activityTitleByKey =
+                    metadata && typeof metadata.titleByKey === "object"
+                        ? metadata.titleByKey
+                        : {};
+                renderTabs();
+            }
+
+            stationIdInput.addEventListener("change", () => {
+                localStorage.setItem(STORAGE_KEY, stationIdInput.value.trim());
+            });
+
+            groupSelect.addEventListener("change", async () => {
+                const groupId = groupSelect.value;
+                participantSelect.innerHTML = `<option value="">Loading participants...</option>`;
+
+                try {
+                    if (!groupId) {
+                        populateParticipants("");
+                        setStatus("Select a group to begin scoring.");
+                        return;
+                    }
+
+                    await ensureParticipantsForGroup(groupId);
+                    populateParticipants(groupId);
+                    setStatus(`Loaded participants for ${groupId}.`);
+                } catch (error) {
+                    currentParticipant = null;
+                    participantSelect.innerHTML =
+                        `<option value="">Unable to load participants</option>`;
+                    refreshAllPreviews();
+                    setStatus(error.message || "Unable to load participants.", "error");
+                }
+            });
+
+            participantSelect.addEventListener("change", () => {
+                const participants = participantsByGroup.get(groupSelect.value) || [];
+                currentParticipant =
+                    participants.find(
+                        (participant) =>
+                            String(participant._id || "") === participantSelect.value,
+                    ) || null;
+                refreshAllPreviews();
+
+                if (currentParticipant) {
+                    setStatus(
+                        `Ready to score ${participantLabel(currentParticipant)}.`,
+                    );
+                } else {
+                    setStatus("Select a participant to continue.");
+                }
+            });
+
+            tabsContainer.addEventListener("click", (event) => {
+                const button = event.target.closest(".tab-button");
+                if (!button) {
+                    return;
+                }
+
+                setActiveTab(button.dataset.activityKey);
+            });
+
+            tabPanels.addEventListener("click", (event) => {
+                const button = event.target.closest("[data-submit-for]");
+                if (!button) {
+                    return;
+                }
+
+                submitScore(button.dataset.submitFor);
+            });
+
+            async function init() {
+                try {
+                    const savedStationId = localStorage.getItem(STORAGE_KEY);
+                    if (savedStationId) {
+                        stationIdInput.value = savedStationId;
+                    }
+
+                    await Promise.all([initializeActivities(), initializeGroups()]);
+                    setStatus("Select a group and participant to begin scoring.");
+                } catch (error) {
+                    console.error(error);
+                    setStatus(
+                        error.message || "Unable to load event scoring tools.",
+                        "error",
+                    );
+                }
+            }
+
+            init();
+        </script>
+    </body>
+</html>

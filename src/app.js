@@ -69,6 +69,12 @@ app.get("/group-setup", (req, res) => {
     );
 });
 
+app.get("/score-events", (req, res) => {
+    return requireWebAuth(req, res, () =>
+        res.sendFile(path.join(__dirname, "public") + "/event-scoring.html"),
+    );
+});
+
 app.get("/create-logo", (req, res) => {
     return requireWebAuth(req, res, () =>
         res.sendFile(path.join(__dirname, "public") + "/logo-creator.html"),
