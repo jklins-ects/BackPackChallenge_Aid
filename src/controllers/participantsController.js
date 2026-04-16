@@ -43,6 +43,24 @@ function buildPublicStatsUrl(req, participantId) {
     return `${baseUrl}/participants/${participantId}/stats`;
 }
 
+function buildPublicStatsLookupUrl(req, groupId, participantCode) {
+    const configuredBaseUrl = normalizePublicBaseUrl(
+        process.env.PUBLIC_API_URL,
+        "https",
+    );
+    const requestBaseUrl = normalizePublicBaseUrl(
+        `${req.protocol}://${req.get("host")}`,
+        req.protocol || "https",
+    );
+    const baseUrl = configuredBaseUrl || requestBaseUrl;
+    const params = new URLSearchParams({
+        gid: String(groupId || "").trim(),
+        pid: String(participantCode || "").trim(),
+    });
+
+    return `${baseUrl}/participants?${params.toString()}`;
+}
+
 function calculateTotalScore(stats) {
     return Object.values(stats || {}).reduce((sum, value) => {
         return sum + (typeof value === "number" ? value : 0);
@@ -788,6 +806,96 @@ async function renameGroup(req, res, next) {
     }
 }
 
+async function createParticipantInExistingGroup(req, res, next) {
+    try {
+        const groupId = String(req.params.groupId || "").trim();
+
+        if (!groupId) {
+            return res.status(400).json({ error: "groupId is required." });
+        }
+
+        const exists = await participantsService.groupExists(groupId);
+        if (!exists) {
+            return res.status(404).json({ error: "Group not found." });
+        }
+
+        const participant = await participantsService.createParticipantInGroup(
+            groupId,
+            {
+                firstName: req.body?.firstName || "",
+                lastName: req.body?.lastName || "",
+            },
+        );
+
+        res.status(201).json({
+            message: "Participant added successfully.",
+            participant,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function importParticipants(req, res, next) {
+    try {
+        const rows = Array.isArray(req.body?.rows) ? req.body.rows : null;
+
+        if (!rows || !rows.length) {
+            return res.status(400).json({ error: "rows array is required." });
+        }
+
+        for (let index = 0; index < rows.length; index += 1) {
+            const row = rows[index];
+            const groupId = String(row?.groupId || "").trim();
+
+            if (!groupId) {
+                return res.status(400).json({
+                    error: `Row ${index + 1} is missing groupId.`,
+                });
+            }
+        }
+
+        const participants = await participantsService.importParticipants(rows);
+
+        res.status(201).json({
+            message: `Imported ${participants.length} participant(s).`,
+            count: participants.length,
+            participants,
+        });
+    } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ error: error.message });
+        }
+
+        next(error);
+    }
+}
+
+async function deleteGroup(req, res, next) {
+    try {
+        const groupId = String(req.params.groupId || "").trim();
+
+        if (!groupId) {
+            return res.status(400).json({ error: "groupId is required." });
+        }
+
+        const deletedParticipants =
+            await participantsService.deleteGroupById(groupId);
+
+        if (!deletedParticipants) {
+            return res.status(404).json({ error: "Group not found." });
+        }
+
+        res.json({
+            message: `Deleted ${groupId}.`,
+            groupId,
+            deletedCount: deletedParticipants.length,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function getPrintableGroupCodes(req, res, next) {
     try {
         const { groupId } = req.params;
@@ -802,12 +910,18 @@ async function getPrintableGroupCodes(req, res, next) {
             .map((participant) => {
                 const name =
                     `${participant.firstName || ""} ${participant.lastName || ""}`.trim();
+                const profileLink = buildPublicStatsLookupUrl(
+                    req,
+                    participant.groupId,
+                    participant.participantCode,
+                );
 
                 return `
         <div class="card">
           <div class="group">${participant.groupId}</div>
           <div class="code">${participant.participantCode}</div>
           <div class="name">${name || "&nbsp;"}</div>
+          <div class="link">${profileLink}</div>
         </div>
       `;
             })
@@ -873,6 +987,13 @@ async function getPrintableGroupCodes(req, res, next) {
             padding-top: 0.08in;
             min-height: 0.22in;
           }
+          .link {
+            margin-top: 0.08in;
+            font-size: 7pt;
+            line-height: 1.25;
+            word-break: break-all;
+            color: #444;
+          }
           @media print {
             @page { margin: 0.5in; }
           }
@@ -894,6 +1015,9 @@ module.exports = {
     bulkCreateGroups,
     bulkCreateParticipants,
     createParticipant,
+    createParticipantInExistingGroup,
+    importParticipants,
+    deleteGroup,
     getAllParticipants,
     getAllGroupIds,
     getParticipantById,

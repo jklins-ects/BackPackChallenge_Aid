@@ -1,970 +1,157 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Group Setup</title>
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <style>
-            :root {
-                --bg: #eef5f1;
-                --card: #ffffff;
-                --text: #173129;
-                --muted: #5f756d;
-                --accent: #1f7a5c;
-                --accent-dark: #15553f;
-                --border: #d4e2db;
-                --surface: rgba(255, 255, 255, 0.9);
-                --shadow: 0 18px 40px rgba(23, 49, 41, 0.12);
-                --danger: #b42318;
-                --success: #027a48;
-            }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Group Setup</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    :root { --text:#173129; --muted:#5f756d; --accent:#1f7a5c; --accent-dark:#15553f; --border:#d4e2db; --surface:rgba(255,255,255,.9); --card:#fff; --shadow:0 18px 40px rgba(23,49,41,.12); --danger:#b42318; --success:#027a48; --soft:#edf6f1; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Arial,Helvetica,sans-serif; background:radial-gradient(circle at top,#f9fcfb 0%,#edf5f1 42%,#e3efe9 100%); color:var(--text); padding:24px 16px 40px; }
+    .page { width:min(1160px,100%); margin:0 auto; }
+    .navbar,.card { background:var(--card); border:1px solid var(--border); border-radius:22px; box-shadow:var(--shadow); }
+    .navbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin:0 auto 24px; padding:16px 18px; background:var(--surface); }
+    .brand-block h1 { margin:0 0 4px; font-size:1.25rem; } .brand-block p { margin:0; color:var(--muted); font-size:.93rem; }
+    .nav-links { display:flex; flex-wrap:wrap; gap:10px; } .nav-links a { text-decoration:none; color:var(--accent-dark); background:var(--soft); border-radius:999px; padding:10px 14px; font-weight:700; }
+    .layout { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; } .card { padding:24px; } .full-width { grid-column:1 / -1; }
+    .card h2 { margin:0 0 8px; font-size:1.45rem; } .card p { margin:0 0 18px; color:var(--muted); line-height:1.55; }
+    .form-grid,.rename-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    label { display:block; margin-bottom:8px; font-weight:700; }
+    input,button { font:inherit; } input { width:100%; padding:12px 14px; border-radius:12px; border:1px solid #c6d6ce; background:#fff; color:var(--text); outline:none; }
+    .actions,.group-manager-toolbar,.group-action-row,.row-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .actions { margin-top:18px; }
+    button,.pill-link { padding:12px 16px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+    button.secondary,.pill-link.secondary { background:var(--soft); color:var(--accent-dark); border:1px solid #c6d6ce; } button.danger { background:#fef3f2; color:var(--danger); border:1px solid #f3c7c2; }
+    .status { min-height:24px; font-weight:700; } .status.success { color:var(--success); } .status.error { color:var(--danger); } .status.info { color:var(--accent-dark); }
+    .results { margin-top:18px; border-top:1px solid var(--border); padding-top:18px; }
+    .group-result { border:1px solid var(--border); border-radius:16px; background:#fbfefd; padding:16px; margin-bottom:12px; } .group-result h3 { margin:0 0 8px; } .group-result a,.profile-link { color:var(--accent-dark); font-weight:700; }
+    .code-list { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:12px; font-size:.92rem; } .code-chip { border-radius:999px; padding:8px 10px; background:var(--soft); text-align:center; font-weight:700; }
+    .group-manager-toolbar { justify-content:space-between; margin-bottom:18px; } .muted { color:var(--muted); }
+    .group-list { display:grid; gap:14px; }
+    details.group-card { border:1px solid var(--border); border-radius:18px; background:#fbfefd; overflow:hidden; } .group-card summary { list-style:none; cursor:pointer; padding:16px 18px; } .group-card summary::-webkit-details-marker { display:none; }
+    .group-summary-row { display:grid; grid-template-columns:auto minmax(0,1fr) auto auto; gap:14px; align-items:center; } .group-summary-main h3 { margin:0 0 4px; font-size:1.08rem; } .group-summary-meta { color:var(--muted); font-size:.92rem; }
+    .group-actions { border-top:1px solid var(--border); padding:18px; display:grid; gap:16px; }
+    .table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:16px; background:#fff; } table { width:100%; border-collapse:collapse; min-width:980px; } th,td { padding:12px; border-bottom:1px solid var(--border); text-align:left; vertical-align:middle; } th { background:var(--soft); color:var(--accent-dark); font-size:.92rem; } tr:last-child td { border-bottom:0; } td input { min-width:120px; }
+    @media (max-width:900px) { .layout,.form-grid,.rename-row,.code-list,.group-summary-row { grid-template-columns:1fr; } .navbar { flex-direction:column; align-items:flex-start; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <nav class="navbar" aria-label="Main navigation">
+      <div class="brand-block"><h1>ECTS Backpack Challenge 2026</h1><p>Group setup</p></div>
+      <div class="nav-links">
+        <a href="/">Home</a><a href="/scoreboard">Scoreboard</a><a href="/score-events">Event Scoring</a><a href="/laser">Group Print View</a><a href="/create-logo">Logo Creator</a>
+      </div>
+    </nav>
 
-            * { box-sizing: border-box; }
+    <div class="layout">
+      <section class="card">
+        <h2>Create One Group</h2>
+        <p>Create one group shell and generate participant codes. Existing groups are rejected and will not be overwritten.</p>
+        <form id="singleGroupForm">
+          <div class="form-grid">
+            <div><label for="singleGroupId">Group ID</label><input id="singleGroupId" type="text" /></div>
+            <div><label for="singleCount">Participants</label><input id="singleCount" type="number" min="1" max="500" value="30" /></div>
+          </div>
+          <div class="actions">
+            <button type="submit">Create Group</button>
+            <button id="singleExportButton" class="secondary" type="button" hidden>Export CSV</button>
+            <div id="singleStatus" class="status info"></div>
+          </div>
+        </form>
+        <div id="singleResults" class="results"></div>
+      </section>
 
-            body {
-                margin: 0;
-                font-family: Arial, Helvetica, sans-serif;
-                background:
-                    radial-gradient(circle at top, #f9fcfb 0%, #edf5f1 42%, #e3efe9 100%);
-                color: var(--text);
-                padding: 24px 16px 40px;
-            }
+      <section class="card">
+        <h2>Auto-Generate Groups</h2>
+        <p>Generate multiple groups using a prefix plus zero-padded numbers, such as <strong>BUS001</strong>, <strong>BUS002</strong>, and so on.</p>
+        <form id="multiGroupForm">
+          <div class="form-grid">
+            <div><label for="groupPrefix">Group Prefix</label><input id="groupPrefix" type="text" /></div>
+            <div><label for="groupCount">Number of Groups</label><input id="groupCount" type="number" min="1" max="100" value="4" /></div>
+            <div><label for="participantsPerGroup">Participants Per Group</label><input id="participantsPerGroup" type="number" min="1" max="500" value="30" /></div>
+            <div><label for="startIndex">Starting Number</label><input id="startIndex" type="number" min="1" value="1" /></div>
+          </div>
+          <div class="actions">
+            <button type="submit">Generate Groups</button>
+            <button id="multiExportButton" class="secondary" type="button" hidden>Export CSV</button>
+            <div id="multiStatus" class="status info"></div>
+          </div>
+        </form>
+        <div id="multiResults" class="results"></div>
+      </section>
 
-            .page {
-                width: min(1100px, 100%);
-                margin: 0 auto;
-            }
-
-            .navbar {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 16px;
-                margin: 0 auto 24px;
-                padding: 16px 18px;
-                background: var(--surface);
-                border: 1px solid var(--border);
-                border-radius: 18px;
-                box-shadow: 0 10px 26px rgba(23, 49, 41, 0.08);
-            }
-
-            .brand-block h1 {
-                margin: 0 0 4px;
-                font-size: 1.25rem;
-            }
-
-            .brand-block p {
-                margin: 0;
-                color: var(--muted);
-                font-size: 0.93rem;
-            }
-
-            .nav-links {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-
-            .nav-links a {
-                text-decoration: none;
-                color: var(--accent-dark);
-                background: #edf6f1;
-                border-radius: 999px;
-                padding: 10px 14px;
-                font-weight: 700;
-            }
-
-            .layout {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 18px;
-            }
-
-            .card {
-                background: var(--card);
-                border: 1px solid var(--border);
-                border-radius: 22px;
-                box-shadow: var(--shadow);
-                padding: 24px;
-            }
-
-            .card h2 {
-                margin: 0 0 8px;
-                font-size: 1.45rem;
-            }
-
-            .card p {
-                margin: 0 0 18px;
-                color: var(--muted);
-                line-height: 1.55;
-            }
-
-            .form-grid {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 14px;
-            }
-
-            label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 700;
-            }
-
-            input,
-            select,
-            button {
-                font: inherit;
-            }
-
-            input,
-            select {
-                width: 100%;
-                padding: 12px 14px;
-                border-radius: 12px;
-                border: 1px solid #c6d6ce;
-                background: #fff;
-                color: var(--text);
-                outline: none;
-            }
-
-            .actions {
-                margin-top: 18px;
-                display: flex;
-                gap: 12px;
-                align-items: center;
-                flex-wrap: wrap;
-            }
-
-            button {
-                padding: 12px 16px;
-                border: 0;
-                border-radius: 12px;
-                background: var(--accent);
-                color: #fff;
-                font-weight: 700;
-                cursor: pointer;
-            }
-
-            button.secondary {
-                background: #edf6f1;
-                color: var(--accent-dark);
-                border: 1px solid #c6d6ce;
-            }
-
-            .status {
-                min-height: 24px;
-                font-weight: 700;
-            }
-
-            .status.success { color: var(--success); }
-            .status.error { color: var(--danger); }
-            .status.info { color: var(--accent-dark); }
-
-            .results {
-                margin-top: 18px;
-                border-top: 1px solid var(--border);
-                padding-top: 18px;
-            }
-
-            .group-result {
-                border: 1px solid var(--border);
-                border-radius: 16px;
-                background: #fbfefd;
-                padding: 16px;
-                margin-bottom: 12px;
-            }
-
-            .group-result h3 {
-                margin: 0 0 8px;
-            }
-
-            .group-result a {
-                color: var(--accent-dark);
-                font-weight: 700;
-            }
-
-            .code-list {
-                display: grid;
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-                gap: 8px;
-                margin-top: 12px;
-                font-size: 0.92rem;
-            }
-
-            .code-chip {
-                border-radius: 999px;
-                padding: 8px 10px;
-                background: #edf6f1;
-                text-align: center;
-                font-weight: 700;
-            }
-
-            .card.full-width {
-                grid-column: 1 / -1;
-            }
-
-            .manage-toolbar {
-                display: grid;
-                grid-template-columns: 1.2fr 1fr auto;
-                gap: 14px;
-                align-items: end;
-            }
-
-            .manage-actions {
-                display: flex;
-                gap: 12px;
-                flex-wrap: wrap;
-                margin-top: 18px;
-                align-items: center;
-            }
-
-            .manage-summary {
-                margin-top: 18px;
-                color: var(--muted);
-                font-weight: 700;
-            }
-
-            .table-wrap {
-                margin-top: 18px;
-                overflow-x: auto;
-                border: 1px solid var(--border);
-                border-radius: 16px;
-                background: #fbfefd;
-            }
-
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                min-width: 720px;
-            }
-
-            th,
-            td {
-                padding: 12px;
-                border-bottom: 1px solid var(--border);
-                text-align: left;
-                vertical-align: middle;
-            }
-
-            th {
-                background: #edf6f1;
-                color: var(--accent-dark);
-                font-size: 0.92rem;
-            }
-
-            td input {
-                min-width: 120px;
-            }
-
-            tr:last-child td {
-                border-bottom: 0;
-            }
-
-            @media (max-width: 900px) {
-                .layout,
-                .form-grid,
-                .code-list {
-                    grid-template-columns: 1fr;
-                }
-
-                .manage-toolbar {
-                    grid-template-columns: 1fr;
-                }
-
-                .navbar {
-                    flex-direction: column;
-                    align-items: flex-start;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="page">
-            <nav class="navbar" aria-label="Main navigation">
-                <div class="brand-block">
-                    <h1>ECTS Backpack Challenge 2026</h1>
-                    <p>Group setup</p>
-                </div>
-                <div class="nav-links">
-                    <a href="/">Home</a>
-                    <a href="/scoreboard">Scoreboard</a>
-                    <a href="/score-events">Event Scoring</a>
-                    <a href="/laser">Group Print View</a>
-                    <a href="/create-logo">Logo Creator</a>
-                </div>
-            </nav>
-
-            <div class="layout">
-                <section class="card">
-                    <h2>Create One Group</h2>
-                    <p>
-                        Create one group shell and generate participant codes. Existing
-                        groups are rejected and will not be overwritten.
-                    </p>
-
-                    <form id="singleGroupForm">
-                        <div class="form-grid">
-                            <div>
-                                <label for="singleGroupId">Group ID</label>
-                                <input id="singleGroupId" type="text" />
-                            </div>
-
-                            <div>
-                                <label for="singleCount">Participants</label>
-                                <input id="singleCount" type="number" min="1" max="500" value="30" />
-                            </div>
-                        </div>
-
-                        <div class="actions">
-                            <button type="submit">Create Group</button>
-                            <button id="singleExportButton" class="secondary" type="button" hidden>
-                                Export CSV
-                            </button>
-                            <div id="singleStatus" class="status info"></div>
-                        </div>
-                    </form>
-
-                    <div id="singleResults" class="results"></div>
-                </section>
-
-                <section class="card">
-                    <h2>Auto-Generate Groups</h2>
-                    <p>
-                        Generate multiple groups using a prefix plus zero-padded numbers,
-                        such as <strong>BUS001</strong>, <strong>BUS002</strong>, and so on.
-                    </p>
-
-                    <form id="multiGroupForm">
-                        <div class="form-grid">
-                            <div>
-                                <label for="groupPrefix">Group Prefix</label>
-                                <input id="groupPrefix" type="text" />
-                            </div>
-
-                            <div>
-                                <label for="groupCount">Number of Groups</label>
-                                <input id="groupCount" type="number" min="1" max="100" value="4" />
-                            </div>
-
-                            <div>
-                                <label for="participantsPerGroup">Participants Per Group</label>
-                                <input
-                                    id="participantsPerGroup"
-                                    type="number"
-                                    min="1"
-                                    max="500"
-                                    value="30"
-                                />
-                            </div>
-
-                            <div>
-                                <label for="startIndex">Starting Number</label>
-                                <input id="startIndex" type="number" min="1" value="1" />
-                            </div>
-                        </div>
-
-                        <div class="actions">
-                            <button type="submit">Generate Groups</button>
-                            <button id="multiExportButton" class="secondary" type="button" hidden>
-                                Export CSV
-                            </button>
-                            <div id="multiStatus" class="status info"></div>
-                        </div>
-                    </form>
-
-                    <div id="multiResults" class="results"></div>
-                </section>
-
-                <section class="card full-width">
-                    <h2>View and Edit Existing Groups</h2>
-                    <p>
-                        Load any existing group, export its current CSV, rename the
-                        group without overwriting another group, and edit participant
-                        codes or names in place.
-                    </p>
-
-                    <div class="manage-toolbar">
-                        <div>
-                            <label for="existingGroupSelect">Existing Group</label>
-                            <select id="existingGroupSelect">
-                                <option value="">Loading groups...</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label for="renameGroupId">Rename Group To</label>
-                            <input id="renameGroupId" type="text" placeholder="New group ID" />
-                        </div>
-
-                        <div>
-                            <button id="loadExistingGroupButton" type="button">Load Group</button>
-                        </div>
-                    </div>
-
-                    <div class="manage-actions">
-                        <button id="renameGroupButton" type="button">Rename Group</button>
-                        <button id="saveExistingGroupButton" class="secondary" type="button">
-                            Save Participant Changes
-                        </button>
-                        <button id="exportExistingGroupButton" class="secondary" type="button">
-                            Export Existing Group CSV
-                        </button>
-                        <a
-                            id="existingPrintLink"
-                            class="secondary"
-                            href="#"
-                            hidden
-                            style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;"
-                        >
-                            Open Printable Labels
-                        </a>
-                        <div id="existingStatus" class="status info"></div>
-                    </div>
-
-                    <div id="existingSummary" class="manage-summary">
-                        Select a group to load its participants.
-                    </div>
-
-                    <div id="existingTableWrap" class="table-wrap" hidden>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Participant ID</th>
-                                    <th>Participant Code</th>
-                                    <th>First Name</th>
-                                    <th>Last Name</th>
-                                    <th>NFC ID</th>
-                                </tr>
-                            </thead>
-                            <tbody id="existingGroupTableBody"></tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
+      <section class="card full-width">
+        <h2>Import From CSV</h2>
+        <p>Import participants from a CSV with columns <strong>firstName</strong>, <strong>lastName</strong>, <strong>groupId</strong>, and <strong>participantId</strong>. If participantId is blank, a new one will be generated. If groupId is blank, the import is rejected.</p>
+        <div class="form-grid">
+          <div>
+            <label for="importCsvFile">CSV File</label>
+            <input id="importCsvFile" type="file" accept=".csv,text/csv" />
+          </div>
+          <div class="actions" style="margin-top:30px;">
+            <button id="importCsvButton" type="button">Import CSV</button>
+            <button id="downloadCsvTemplateButton" class="secondary" type="button">Download Template CSV</button>
+          </div>
         </div>
-
-        <script>
-            let lastSingleGroups = [];
-            let lastMultiGroups = [];
-            let availableGroupIds = [];
-            let loadedExistingGroup = null;
-            let loadedExistingParticipants = [];
-
-            function setStatus(element, message, type = "info") {
-                element.textContent = message;
-                element.className = `status ${type}`;
-            }
-
-            function setExportVisibility(button, groups) {
-                button.hidden = !Array.isArray(groups) || groups.length === 0;
-            }
-
-            async function fetchJson(url, options = {}) {
-                const response = await fetch(url, options);
-                const data = await response.json().catch(() => ({}));
-
-                if (!response.ok) {
-                    throw new Error(
-                        data?.error ||
-                            data?.message ||
-                            `Request failed with status ${response.status}`,
-                    );
-                }
-
-                return data;
-            }
-
-            function escapeCsvCell(value) {
-                const text = String(value ?? "");
-                if (!/[",\r\n]/.test(text)) {
-                    return text;
-                }
-
-                return `"${text.replace(/"/g, '""')}"`;
-            }
-
-            function buildGroupsCsv(groups) {
-                const rows = [["groupId", "participantCode", "participantId", "firstName", "lastName"]];
-
-                for (const group of groups || []) {
-                    const participants = Array.isArray(group.participants)
-                        ? group.participants
-                        : [];
-
-                    for (const participant of participants) {
-                        rows.push([
-                            group.groupId || "",
-                            participant.participantCode || "",
-                            participant._id || "",
-                            participant.firstName || "",
-                            participant.lastName || "",
-                        ]);
-                    }
-                }
-
-                return rows
-                    .map((row) => row.map((cell) => escapeCsvCell(cell)).join(","))
-                    .join("\r\n");
-            }
-
-            function downloadGroupsCsv(groups, filename) {
-                if (!Array.isArray(groups) || !groups.length) {
-                    return;
-                }
-
-                const csv = buildGroupsCsv(groups);
-                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-                const downloadUrl = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-
-                link.href = downloadUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                URL.revokeObjectURL(downloadUrl);
-            }
-
-            function renderGroupResults(container, groups) {
-                if (!Array.isArray(groups) || !groups.length) {
-                    container.innerHTML = "";
-                    return;
-                }
-
-                container.innerHTML = groups
-                    .map((group) => {
-                        const participants = Array.isArray(group.participants)
-                            ? group.participants
-                            : [];
-                        const codeList = participants
-                            .map(
-                                (participant) => `
-                                    <div class="code-chip">
-                                        ${group.groupId} / ${participant.participantCode}
-                                    </div>
-                                `,
-                            )
-                            .join("");
-
-                        return `
-                            <div class="group-result">
-                                <h3>${group.groupId}</h3>
-                                <div>
-                                    ${group.participantCount || participants.length} participant(s)
-                                    &middot;
-                                    <a href="/api/participants/group/${encodeURIComponent(group.groupId)}/print-codes" target="_blank" rel="noopener noreferrer">
-                                        Open printable labels
-                                    </a>
-                                </div>
-                                <div class="code-list">${codeList}</div>
-                            </div>
-                        `;
-                    })
-                    .join("");
-            }
-
-            function renderExistingGroupTable(participants) {
-                const tableWrap = document.getElementById("existingTableWrap");
-                const tableBody = document.getElementById("existingGroupTableBody");
-                const summary = document.getElementById("existingSummary");
-                const printLink = document.getElementById("existingPrintLink");
-
-                if (!loadedExistingGroup || !participants.length) {
-                    tableBody.innerHTML = "";
-                    tableWrap.hidden = true;
-                    printLink.hidden = true;
-                    summary.textContent = loadedExistingGroup
-                        ? `No participants found for ${loadedExistingGroup}.`
-                        : "Select a group to load its participants.";
-                    return;
-                }
-
-                summary.textContent = `${loadedExistingGroup} loaded with ${participants.length} participant(s).`;
-                tableWrap.hidden = false;
-                printLink.hidden = false;
-                printLink.href = `/api/participants/group/${encodeURIComponent(loadedExistingGroup)}/print-codes`;
-
-                tableBody.innerHTML = participants
-                    .map(
-                        (participant) => `
-                            <tr data-participant-id="${participant._id}">
-                                <td>${participant._id}</td>
-                                <td>
-                                    <input
-                                        type="text"
-                                        data-field="participantCode"
-                                        value="${participant.participantCode || ""}"
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        type="text"
-                                        data-field="firstName"
-                                        value="${participant.firstName || ""}"
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        type="text"
-                                        data-field="lastName"
-                                        value="${participant.lastName || ""}"
-                                    />
-                                </td>
-                                <td>${participant.nfcId || ""}</td>
-                            </tr>
-                        `,
-                    )
-                    .join("");
-            }
-
-            function populateExistingGroupOptions(selectedGroupId = "") {
-                const select = document.getElementById("existingGroupSelect");
-                select.innerHTML = `<option value="">Select a group</option>`;
-
-                availableGroupIds.forEach((groupId) => {
-                    select.appendChild(new Option(groupId, groupId));
-                });
-
-                if (selectedGroupId && availableGroupIds.includes(selectedGroupId)) {
-                    select.value = selectedGroupId;
-                }
-            }
-
-            async function refreshGroupOptions(selectedGroupId = "") {
-                availableGroupIds = await fetchJson("/api/participants/groups");
-                populateExistingGroupOptions(selectedGroupId);
-            }
-
-            async function loadExistingGroup(groupId) {
-                if (!groupId) {
-                    loadedExistingGroup = null;
-                    loadedExistingParticipants = [];
-                    renderExistingGroupTable([]);
-                    return;
-                }
-
-                const participants = await fetchJson(
-                    `/api/participants/group/${encodeURIComponent(groupId)}`,
-                );
-                loadedExistingGroup = groupId;
-                loadedExistingParticipants = participants;
-                document.getElementById("renameGroupId").value = groupId;
-                renderExistingGroupTable(participants);
-            }
-
-            async function renameExistingGroup() {
-                const statusElement = document.getElementById("existingStatus");
-                const currentGroupId = document.getElementById("existingGroupSelect").value;
-                const newGroupId = document.getElementById("renameGroupId").value.trim();
-
-                if (!currentGroupId) {
-                    setStatus(statusElement, "Select a group before renaming.", "error");
-                    return;
-                }
-
-                if (!newGroupId) {
-                    setStatus(statusElement, "Enter a new group ID.", "error");
-                    return;
-                }
-
-                if (currentGroupId !== newGroupId && availableGroupIds.includes(newGroupId)) {
-                    setStatus(
-                        statusElement,
-                        `Group ${newGroupId} already exists.`,
-                        "error",
-                    );
-                    return;
-                }
-
-                setStatus(statusElement, "Renaming group...", "info");
-                const response = await fetchJson(
-                    `/api/participants/group/${encodeURIComponent(currentGroupId)}`,
-                    {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ newGroupId }),
-                    },
-                );
-
-                loadedExistingGroup = response.groupId;
-                loadedExistingParticipants = response.participants || [];
-                await refreshGroupOptions(response.groupId);
-                renderExistingGroupTable(loadedExistingParticipants);
-                setStatus(statusElement, response.message, "success");
-            }
-
-            function collectExistingParticipantEdits() {
-                const rows = Array.from(
-                    document.querySelectorAll("#existingGroupTableBody tr"),
-                );
-
-                return rows.map((row) => ({
-                    id: row.dataset.participantId,
-                    participantCode: row.querySelector('[data-field="participantCode"]').value.trim(),
-                    firstName: row.querySelector('[data-field="firstName"]').value.trim(),
-                    lastName: row.querySelector('[data-field="lastName"]').value.trim(),
-                }));
-            }
-
-            async function saveExistingGroupEdits() {
-                const statusElement = document.getElementById("existingStatus");
-
-                if (!loadedExistingGroup) {
-                    setStatus(statusElement, "Select a group before saving changes.", "error");
-                    return;
-                }
-
-                const editedRows = collectExistingParticipantEdits();
-                const updates = [];
-
-                for (const row of editedRows) {
-                    const original = loadedExistingParticipants.find(
-                        (participant) => String(participant._id) === row.id,
-                    );
-
-                    if (!original) {
-                        continue;
-                    }
-
-                    const patch = {};
-                    if ((original.participantCode || "") !== row.participantCode) {
-                        patch.participantCode = row.participantCode;
-                    }
-                    if ((original.firstName || "") !== row.firstName) {
-                        patch.firstName = row.firstName;
-                    }
-                    if ((original.lastName || "") !== row.lastName) {
-                        patch.lastName = row.lastName;
-                    }
-
-                    if (Object.keys(patch).length) {
-                        updates.push({ id: row.id, patch });
-                    }
-                }
-
-                if (!updates.length) {
-                    setStatus(statusElement, "No participant changes to save.", "info");
-                    return;
-                }
-
-                setStatus(statusElement, "Saving participant changes...", "info");
-
-                await Promise.all(
-                    updates.map((update) =>
-                        fetchJson(`/api/participants/${encodeURIComponent(update.id)}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(update.patch),
-                        }),
-                    ),
-                );
-
-                await loadExistingGroup(loadedExistingGroup);
-                setStatus(
-                    statusElement,
-                    `Saved ${updates.length} participant update(s).`,
-                    "success",
-                );
-            }
-
-            document.getElementById("singleGroupForm").addEventListener("submit", async (event) => {
-                event.preventDefault();
-
-                const statusElement = document.getElementById("singleStatus");
-                const resultsElement = document.getElementById("singleResults");
-                const exportButton = document.getElementById("singleExportButton");
-
-                try {
-                    setStatus(statusElement, "Creating group...", "info");
-                    const payload = {
-                        groupId: document.getElementById("singleGroupId").value.trim(),
-                        count: Number.parseInt(
-                            document.getElementById("singleCount").value,
-                            10,
-                        ),
-                    };
-
-                    const response = await fetchJson("/api/participants/bulk-create", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload),
-                    });
-
-                    lastSingleGroups = [
-                        {
-                            groupId: payload.groupId,
-                            participantCount: response.count,
-                            participants: response.participants || [],
-                        },
-                    ];
-                    renderGroupResults(resultsElement, lastSingleGroups);
-                    setExportVisibility(exportButton, lastSingleGroups);
-                    await refreshGroupOptions(payload.groupId);
-                    setStatus(statusElement, `Created ${payload.groupId}.`, "success");
-                } catch (error) {
-                    lastSingleGroups = [];
-                    setExportVisibility(exportButton, lastSingleGroups);
-                    setStatus(statusElement, error.message || "Unable to create group.", "error");
-                }
-            });
-
-            document.getElementById("multiGroupForm").addEventListener("submit", async (event) => {
-                event.preventDefault();
-
-                const statusElement = document.getElementById("multiStatus");
-                const resultsElement = document.getElementById("multiResults");
-                const exportButton = document.getElementById("multiExportButton");
-
-                try {
-                    setStatus(statusElement, "Generating groups...", "info");
-                    const payload = {
-                        groupPrefix: document.getElementById("groupPrefix").value.trim(),
-                        groupCount: Number.parseInt(
-                            document.getElementById("groupCount").value,
-                            10,
-                        ),
-                        participantsPerGroup: Number.parseInt(
-                            document.getElementById("participantsPerGroup").value,
-                            10,
-                        ),
-                        startIndex: Number.parseInt(
-                            document.getElementById("startIndex").value,
-                            10,
-                        ),
-                    };
-
-                    const response = await fetchJson(
-                        "/api/participants/bulk-create-groups",
-                        {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(payload),
-                        },
-                    );
-
-                    lastMultiGroups = response.groups || [];
-                    renderGroupResults(resultsElement, lastMultiGroups);
-                    setExportVisibility(exportButton, lastMultiGroups);
-                    await refreshGroupOptions(lastMultiGroups[0]?.groupId || "");
-                    setStatus(
-                        statusElement,
-                        `Created ${response.groupCount} group(s).`,
-                        "success",
-                    );
-                } catch (error) {
-                    lastMultiGroups = [];
-                    setExportVisibility(exportButton, lastMultiGroups);
-                    setStatus(
-                        statusElement,
-                        error.message || "Unable to generate groups.",
-                        "error",
-                    );
-                }
-            });
-
-            document
-                .getElementById("singleExportButton")
-                .addEventListener("click", () => {
-                    if (!lastSingleGroups.length) {
-                        return;
-                    }
-
-                    downloadGroupsCsv(
-                        lastSingleGroups,
-                        `${lastSingleGroups[0].groupId || "group"}-participants.csv`,
-                    );
-                });
-
-            document
-                .getElementById("multiExportButton")
-                .addEventListener("click", () => {
-                    if (!lastMultiGroups.length) {
-                        return;
-                    }
-
-                    const prefix = lastMultiGroups[0]?.groupId?.replace(/\d+$/, "") || "groups";
-                    downloadGroupsCsv(lastMultiGroups, `${prefix}-participants.csv`);
-                });
-
-            document
-                .getElementById("loadExistingGroupButton")
-                .addEventListener("click", async () => {
-                    const statusElement = document.getElementById("existingStatus");
-                    const groupId = document.getElementById("existingGroupSelect").value;
-
-                    try {
-                        setStatus(statusElement, "Loading group...", "info");
-                        await loadExistingGroup(groupId);
-                        setStatus(
-                            statusElement,
-                            groupId ? `Loaded ${groupId}.` : "Select a group to load.",
-                            groupId ? "success" : "info",
-                        );
-                    } catch (error) {
-                        setStatus(
-                            statusElement,
-                            error.message || "Unable to load group.",
-                            "error",
-                        );
-                    }
-                });
-
-            document
-                .getElementById("renameGroupButton")
-                .addEventListener("click", async () => {
-                    try {
-                        await renameExistingGroup();
-                    } catch (error) {
-                        setStatus(
-                            document.getElementById("existingStatus"),
-                            error.message || "Unable to rename group.",
-                            "error",
-                        );
-                    }
-                });
-
-            document
-                .getElementById("saveExistingGroupButton")
-                .addEventListener("click", async () => {
-                    try {
-                        await saveExistingGroupEdits();
-                    } catch (error) {
-                        setStatus(
-                            document.getElementById("existingStatus"),
-                            error.message || "Unable to save participant changes.",
-                            "error",
-                        );
-                    }
-                });
-
-            document
-                .getElementById("exportExistingGroupButton")
-                .addEventListener("click", () => {
-                    if (!loadedExistingGroup || !loadedExistingParticipants.length) {
-                        return;
-                    }
-
-                    downloadGroupsCsv(
-                        [
-                            {
-                                groupId: loadedExistingGroup,
-                                participantCount: loadedExistingParticipants.length,
-                                participants: loadedExistingParticipants,
-                            },
-                        ],
-                        `${loadedExistingGroup}-participants.csv`,
-                    );
-                });
-
-            refreshGroupOptions().catch((error) => {
-                setStatus(
-                    document.getElementById("existingStatus"),
-                    error.message || "Unable to load existing groups.",
-                    "error",
-                );
-            });
-        </script>
-    </body>
+        <div id="importCsvStatus" class="status info"></div>
+      </section>
+
+      <section class="card full-width">
+        <h2>Group Manager</h2>
+        <p>Expand any group to edit participants, rename the group, add or remove participants, and include selected groups in one CSV export.</p>
+        <div class="group-manager-toolbar">
+          <div class="muted">Select groups, then export one combined CSV.</div>
+          <div class="actions" style="margin-top:0;">
+            <button id="refreshGroupsButton" class="secondary" type="button">Refresh Groups</button>
+            <button id="exportSelectedGroupsButton" type="button">Export Selected Groups CSV</button>
+          </div>
+        </div>
+        <div id="groupManagerStatus" class="status info">Loading groups...</div>
+        <div id="groupManagerList" class="group-list"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    let lastSingleGroups=[],lastMultiGroups=[],availableGroupIds=[]; const loadedGroupData=new Map(),selectedGroupIds=new Set();
+    const managerStatus=document.getElementById("groupManagerStatus"),managerList=document.getElementById("groupManagerList");
+    function setStatus(el,msg,type="info"){el.textContent=msg;el.className=`status ${type}`;}
+    function setExportVisibility(btn,groups){btn.hidden=!Array.isArray(groups)||!groups.length;}
+    async function fetchJson(url,options={}){const r=await fetch(url,options),d=await r.json().catch(()=>({})); if(!r.ok) throw new Error(d?.error||d?.message||`Request failed with status ${r.status}`); return d;}
+    function profileLinkForParticipant(groupId,participantCode){const params=new URLSearchParams({gid:String(groupId||"").trim(),pid:String(participantCode||"").trim()}); return `${window.location.origin}/participants?${params.toString()}`;}
+    function escapeCsvCell(v){const t=String(v??""); return /[",\r\n]/.test(t)?`"${t.replace(/"/g,'""')}"`:t;}
+    function parseCsvLine(line){const values=[]; let current="",inQuotes=false; for(let i=0;i<line.length;i+=1){const char=line[i],next=line[i+1]; if(char==='"'){ if(inQuotes&&next==='"'){ current+='"'; i+=1; } else { inQuotes=!inQuotes; } } else if(char===','&&!inQuotes){ values.push(current); current=""; } else { current+=char; }} values.push(current); return values;}
+    function parseCsvText(text){const normalized=String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n"); const lines=normalized.split("\n").filter(line=>line.trim()!==""); if(!lines.length) return []; const headers=parseCsvLine(lines[0]).map(h=>h.trim().toLowerCase()); return lines.slice(1).map(line=>{const values=parseCsvLine(line); const row={}; headers.forEach((header,index)=>{row[header]=String(values[index]||"").trim();}); return row;});}
+    function buildGroupsCsv(groups){const rows=[["groupId","participantId","firstName","lastName","profileLink"]]; for(const group of groups||[]){for(const p of Array.isArray(group.participants)?group.participants:[]){rows.push([group.groupId||"",p._id||"",p.firstName||"",p.lastName||"",profileLinkForParticipant(group.groupId,p.participantCode)]);}} return rows.map(row=>row.map(escapeCsvCell).join(",")).join("\r\n");}
+    function downloadGroupsCsv(groups,filename){if(!groups?.length)return; const blob=new Blob([buildGroupsCsv(groups)],{type:"text/csv;charset=utf-8;"}),u=URL.createObjectURL(blob),a=document.createElement("a"); a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);}
+    function downloadTextFile(text,filename,type="text/plain;charset=utf-8;"){const blob=new Blob([text],{type}),u=URL.createObjectURL(blob),a=document.createElement("a"); a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);}
+    function renderGroupResults(container,groups){if(!groups?.length){container.innerHTML="";return;} container.innerHTML=groups.map(group=>{const ps=Array.isArray(group.participants)?group.participants:[]; return `<div class="group-result"><h3>${group.groupId}</h3><div>${group.participantCount||ps.length} participant(s) &middot; <a href="/api/participants/group/${encodeURIComponent(group.groupId)}/print-codes" target="_blank" rel="noopener noreferrer">Open printable labels</a></div><div class="code-list">${ps.map(p=>`<div class="code-chip">${group.groupId} / ${p.participantCode}</div>`).join("")}</div></div>`;}).join("");}
+    function participantRowHtml(groupId,p){return `<tr data-group-id="${groupId}" data-participant-id="${p._id}"><td>${p._id}</td><td><input type="text" data-field="participantCode" value="${p.participantCode||""}" /></td><td><input type="text" data-field="firstName" value="${p.firstName||""}" /></td><td><input type="text" data-field="lastName" value="${p.lastName||""}" /></td><td>${p.nfcId||""}</td><td><a class="profile-link" href="/participants?gid=${encodeURIComponent(groupId)}&pid=${encodeURIComponent(p.participantCode||"")}" target="_blank" rel="noopener noreferrer">Profile</a></td><td><div class="row-actions"><button class="danger" type="button" data-remove-participant data-group-id="${groupId}" data-participant-id="${p._id}">Remove</button></div></td></tr>`;}
+    function renderGroupManager(){if(!availableGroupIds.length){managerList.innerHTML='<div class="muted">No groups found yet.</div>';return;} managerList.innerHTML=availableGroupIds.map(groupId=>{const data=loadedGroupData.get(groupId),ps=Array.isArray(data?.participants)?data.participants:[]; return `<details class="group-card" data-group-card="${groupId}"><summary><div class="group-summary-row"><div><input type="checkbox" data-group-checkbox="${groupId}" ${selectedGroupIds.has(groupId)?"checked":""} aria-label="Select ${groupId} for CSV export" /></div><div class="group-summary-main"><h3>${groupId}</h3><div class="group-summary-meta">${data?`${ps.length} participant(s)`:"Expand to load participants"}</div></div><div><a href="/api/participants/group/${encodeURIComponent(groupId)}/print-codes" target="_blank" rel="noopener noreferrer">Printable labels</a></div><div class="muted">Expand</div></div></summary><div class="group-actions"><div class="rename-row"><div><label for="rename-${groupId}">Group ID</label><input id="rename-${groupId}" data-rename-input="${groupId}" type="text" value="${groupId}" /></div><div><button type="button" data-rename-group="${groupId}">Rename Group</button></div></div><div class="group-action-row"><button class="secondary" type="button" data-save-group="${groupId}">Save Participant Changes</button><button class="secondary" type="button" data-add-participant="${groupId}">Add Participant</button><button class="secondary" type="button" data-export-group="${groupId}">Export This Group CSV</button><button class="danger" type="button" data-delete-group="${groupId}">Delete Group</button><span class="status info" data-group-message="${groupId}">${data?"Loaded.":"Expand to load this group."}</span></div><div class="table-wrap"><table><thead><tr><th>Participant ID</th><th>Participant Code</th><th>First Name</th><th>Last Name</th><th>NFC ID</th><th>Profile</th><th>Actions</th></tr></thead><tbody data-group-body="${groupId}">${ps.length?ps.map(p=>participantRowHtml(groupId,p)).join(""):`<tr><td colspan="7" class="muted">No participants loaded yet.</td></tr>`}</tbody></table></div></div></details>`;}).join("");}
+    function setGroupMessage(groupId,msg,type="info"){const el=document.querySelector(`[data-group-message="${groupId}"]`); if(el){el.textContent=msg;el.className=`status ${type}`;}}
+    async function refreshGroupOptions(){availableGroupIds=await fetchJson("/api/participants/groups"); renderGroupManager();}
+    async function loadGroupParticipants(groupId,{force=false}={}){if(!force&&loadedGroupData.has(groupId)) return loadedGroupData.get(groupId); const participants=await fetchJson(`/api/participants/group/${encodeURIComponent(groupId)}`),data={groupId,participants}; loadedGroupData.set(groupId,data); renderGroupManager(); return data;}
+    function collectGroupEdits(groupId){return Array.from(document.querySelectorAll(`tbody[data-group-body="${groupId}"] tr[data-participant-id]`)).map(row=>({id:row.dataset.participantId,participantCode:row.querySelector('[data-field="participantCode"]').value.trim(),firstName:row.querySelector('[data-field="firstName"]').value.trim(),lastName:row.querySelector('[data-field="lastName"]').value.trim()}));}
+    async function saveGroupEdits(groupId){if(!loadedGroupData.has(groupId)) await loadGroupParticipants(groupId,{force:true}); const current=loadedGroupData.get(groupId),rows=collectGroupEdits(groupId),updates=[]; for(const row of rows){const orig=current.participants.find(p=>String(p._id)===row.id); if(!orig) continue; const patch={}; if((orig.participantCode||"")!==row.participantCode) patch.participantCode=row.participantCode; if((orig.firstName||"")!==row.firstName) patch.firstName=row.firstName; if((orig.lastName||"")!==row.lastName) patch.lastName=row.lastName; if(Object.keys(patch).length) updates.push({id:row.id,patch});} if(!updates.length){setGroupMessage(groupId,"No participant changes to save.","info"); return;} setGroupMessage(groupId,"Saving participant changes...","info"); await Promise.all(updates.map(u=>fetchJson(`/api/participants/${encodeURIComponent(u.id)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(u.patch)}))); await loadGroupParticipants(groupId,{force:true}); setGroupMessage(groupId,`Saved ${updates.length} participant update(s).`,"success");}
+    async function renameGroup(groupId){const input=document.querySelector(`[data-rename-input="${groupId}"]`),newGroupId=input?.value?.trim()||""; if(!newGroupId){setGroupMessage(groupId,"Enter a group ID.","error"); return;} setGroupMessage(groupId,"Renaming group...","info"); const response=await fetchJson(`/api/participants/group/${encodeURIComponent(groupId)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({newGroupId})}); loadedGroupData.delete(groupId); loadedGroupData.set(response.groupId,{groupId:response.groupId,participants:response.participants||[]}); await refreshGroupOptions(); const card=document.querySelector(`[data-group-card="${response.groupId}"]`); if(card) card.open=true; setGroupMessage(response.groupId,response.message,"success");}
+    async function addParticipantToGroup(groupId){setGroupMessage(groupId,"Adding participant...","info"); await fetchJson(`/api/participants/group/${encodeURIComponent(groupId)}/participants`,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}); await loadGroupParticipants(groupId,{force:true}); const card=document.querySelector(`[data-group-card="${groupId}"]`); if(card) card.open=true; setGroupMessage(groupId,"Added a new participant shell.","success");}
+    async function removeParticipantFromGroup(groupId,participantId){if(!window.confirm("Remove this participant from the group?")) return; setGroupMessage(groupId,"Removing participant...","info"); await fetchJson(`/api/participants/${encodeURIComponent(participantId)}`,{method:"DELETE"}); await loadGroupParticipants(groupId,{force:true}); const card=document.querySelector(`[data-group-card="${groupId}"]`); if(card) card.open=true; setGroupMessage(groupId,"Participant removed.","success");}
+    async function exportSelectedGroups(){const ids=Array.from(selectedGroupIds); if(!ids.length){setStatus(managerStatus,"Select at least one group before exporting.","error"); return;} await Promise.all(ids.map(id=>loadGroupParticipants(id))); const groups=ids.map(id=>loadedGroupData.get(id)).filter(Boolean); downloadGroupsCsv(groups,"selected-groups-participants.csv"); setStatus(managerStatus,`Exported ${groups.length} selected group(s).`,"success");}
+    async function deleteGroup(groupId){if(!window.confirm(`Delete group ${groupId} and all of its participants?`)) return; setGroupMessage(groupId,"Deleting group...","info"); await fetchJson(`/api/participants/group/${encodeURIComponent(groupId)}`,{method:"DELETE"}); loadedGroupData.delete(groupId); selectedGroupIds.delete(groupId); await refreshGroupOptions(); setStatus(managerStatus,`Deleted ${groupId}.`,"success");}
+    document.getElementById("singleGroupForm").addEventListener("submit",async e=>{e.preventDefault();const status=document.getElementById("singleStatus"),results=document.getElementById("singleResults"),btn=document.getElementById("singleExportButton"); try{setStatus(status,"Creating group...","info"); const payload={groupId:document.getElementById("singleGroupId").value.trim(),count:Number.parseInt(document.getElementById("singleCount").value,10)}; const response=await fetchJson("/api/participants/bulk-create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); lastSingleGroups=[{groupId:payload.groupId,participantCount:response.count,participants:response.participants||[]}]; renderGroupResults(results,lastSingleGroups); setExportVisibility(btn,lastSingleGroups); await refreshGroupOptions(); setStatus(status,`Created ${payload.groupId}.`,"success"); }catch(error){lastSingleGroups=[];setExportVisibility(btn,lastSingleGroups);setStatus(status,error.message||"Unable to create group.","error");}});
+    document.getElementById("multiGroupForm").addEventListener("submit",async e=>{e.preventDefault();const status=document.getElementById("multiStatus"),results=document.getElementById("multiResults"),btn=document.getElementById("multiExportButton"); try{setStatus(status,"Generating groups...","info"); const payload={groupPrefix:document.getElementById("groupPrefix").value.trim(),groupCount:Number.parseInt(document.getElementById("groupCount").value,10),participantsPerGroup:Number.parseInt(document.getElementById("participantsPerGroup").value,10),startIndex:Number.parseInt(document.getElementById("startIndex").value,10)}; const response=await fetchJson("/api/participants/bulk-create-groups",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}); lastMultiGroups=response.groups||[]; renderGroupResults(results,lastMultiGroups); setExportVisibility(btn,lastMultiGroups); await refreshGroupOptions(); setStatus(status,`Created ${response.groupCount} group(s).`,"success"); }catch(error){lastMultiGroups=[];setExportVisibility(btn,lastMultiGroups);setStatus(status,error.message||"Unable to generate groups.","error");}});
+    document.getElementById("singleExportButton").addEventListener("click",()=>lastSingleGroups.length&&downloadGroupsCsv(lastSingleGroups,`${lastSingleGroups[0].groupId||"group"}-participants.csv`));
+    document.getElementById("multiExportButton").addEventListener("click",()=>lastMultiGroups.length&&downloadGroupsCsv(lastMultiGroups,`${lastMultiGroups[0]?.groupId?.replace(/\d+$/,"")||"groups"}-participants.csv`));
+    document.getElementById("downloadCsvTemplateButton").addEventListener("click",()=>downloadTextFile("firstName,lastName,groupId,participantId\nJane,Doe,BUS001,\nJohn,Smith,BUS001,AB12\n","participant-import-template.csv","text/csv;charset=utf-8;"));
+    document.getElementById("importCsvButton").addEventListener("click",async()=>{const status=document.getElementById("importCsvStatus"),fileInput=document.getElementById("importCsvFile"),file=fileInput.files?.[0]; if(!file){setStatus(status,"Choose a CSV file to import.","error"); return;} try{setStatus(status,"Reading CSV...","info"); const text=await file.text(),parsedRows=parseCsvText(text); if(!parsedRows.length){setStatus(status,"The CSV does not contain any import rows.","error"); return;} const rows=parsedRows.map((row,index)=>({firstName:row.firstname||"",lastName:row.lastname||"",groupId:row.groupid||"",participantCode:row.participantid||"",rowNumber:index+2})); const response=await fetchJson("/api/participants/import",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rows})}); await refreshGroupOptions(); fileInput.value=""; setStatus(status,response.message||`Imported ${response.count} participant(s).`,"success"); setStatus(managerStatus,"Group list refreshed after import.","success"); }catch(error){setStatus(status,error.message||"Unable to import CSV.","error");}});
+    document.getElementById("refreshGroupsButton").addEventListener("click",async()=>{try{setStatus(managerStatus,"Refreshing groups...","info"); loadedGroupData.clear(); await refreshGroupOptions(); setStatus(managerStatus,"Group list refreshed.","success");}catch(error){setStatus(managerStatus,error.message||"Unable to refresh groups.","error");}});
+    document.getElementById("exportSelectedGroupsButton").addEventListener("click",()=>{exportSelectedGroups().catch(error=>setStatus(managerStatus,error.message||"Unable to export selected groups.","error"));});
+    managerList.addEventListener("change",e=>{const checkbox=e.target.closest("[data-group-checkbox]"); if(!checkbox) return; const id=checkbox.getAttribute("data-group-checkbox"); if(checkbox.checked) selectedGroupIds.add(id); else selectedGroupIds.delete(id);});
+    managerList.addEventListener("toggle",async e=>{const details=e.target.closest("details.group-card"); if(!details||!details.open) return; const groupId=details.getAttribute("data-group-card"); try{setGroupMessage(groupId,"Loading participants...","info"); await loadGroupParticipants(groupId); const reopened=document.querySelector(`[data-group-card="${groupId}"]`); if(reopened) reopened.open=true; setGroupMessage(groupId,"Loaded.","success");}catch(error){setGroupMessage(groupId,error.message||"Unable to load participants.","error");}},true);
+    managerList.addEventListener("click",async e=>{const save=e.target.closest("[data-save-group]"),rename=e.target.closest("[data-rename-group]"),add=e.target.closest("[data-add-participant]"),exportOne=e.target.closest("[data-export-group]"),remove=e.target.closest("[data-remove-participant]"),deleteBtn=e.target.closest("[data-delete-group]"); try{ if(save){await saveGroupEdits(save.getAttribute("data-save-group")); return;} if(rename){await renameGroup(rename.getAttribute("data-rename-group")); return;} if(add){await addParticipantToGroup(add.getAttribute("data-add-participant")); return;} if(exportOne){const id=exportOne.getAttribute("data-export-group"); await loadGroupParticipants(id); const data=loadedGroupData.get(id); downloadGroupsCsv([data],`${id}-participants.csv`); setGroupMessage(id,"CSV exported.","success"); return;} if(remove){await removeParticipantFromGroup(remove.getAttribute("data-group-id"),remove.getAttribute("data-participant-id")); return;} if(deleteBtn){await deleteGroup(deleteBtn.getAttribute("data-delete-group")); return;} }catch(error){const id=(save&&save.getAttribute("data-save-group"))||(rename&&rename.getAttribute("data-rename-group"))||(add&&add.getAttribute("data-add-participant"))||(exportOne&&exportOne.getAttribute("data-export-group"))||(remove&&remove.getAttribute("data-group-id"))||(deleteBtn&&deleteBtn.getAttribute("data-delete-group"))||""; if(id) setGroupMessage(id,error.message||"Action failed.","error");}});
+    refreshGroupOptions().then(()=>setStatus(managerStatus,"Expand a group to load and edit participants.","info")).catch(error=>setStatus(managerStatus,error.message||"Unable to load groups.","error"));
+  </script>
+</body>
 </html>

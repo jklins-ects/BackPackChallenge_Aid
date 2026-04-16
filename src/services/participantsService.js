@@ -14,6 +14,88 @@ async function createParticipant(participant) {
     return collection.findOne({ _id: result.insertedId });
 }
 
+async function createParticipantInGroup(groupId, input = {}) {
+    const collection = await getParticipantsCollection();
+    const normalizedGroupId = String(groupId || "").trim();
+
+    const participantCode = await generateUniqueParticipantCode(
+        async (candidate) => {
+            const existing = await collection.findOne(
+                { participantCode: candidate },
+                { projection: { _id: 1 } },
+            );
+            return Boolean(existing);
+        },
+    );
+
+    const participant = buildParticipantForInsert({
+        groupId: normalizedGroupId,
+        participantCode,
+        firstName: input.firstName || "",
+        lastName: input.lastName || "",
+    });
+
+    const result = await collection.insertOne(participant);
+    return collection.findOne({ _id: result.insertedId });
+}
+
+async function importParticipants(rows = []) {
+    const collection = await getParticipantsCollection();
+    const existingCodes = new Set(await collection.distinct("participantCode"));
+    const importedCodes = new Set();
+    const participantsToInsert = [];
+
+    for (let index = 0; index < rows.length; index += 1) {
+        const row = rows[index] || {};
+        const groupId = String(row.groupId || "").trim();
+        const firstName = String(row.firstName || "").trim();
+        const lastName = String(row.lastName || "").trim();
+        let participantCode = String(row.participantCode || "").trim().toUpperCase();
+
+        if (!groupId) {
+            const error = new Error(`Row ${index + 1} is missing groupId.`);
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (!participantCode) {
+            participantCode = await generateUniqueParticipantCode(
+                async (candidate) =>
+                    existingCodes.has(candidate) || importedCodes.has(candidate),
+            );
+        }
+
+        if (existingCodes.has(participantCode) || importedCodes.has(participantCode)) {
+            const error = new Error(
+                `Participant ID ${participantCode} is already in use.`,
+            );
+            error.statusCode = 409;
+            throw error;
+        }
+
+        importedCodes.add(participantCode);
+        participantsToInsert.push(
+            buildParticipantForInsert({
+                groupId,
+                participantCode,
+                firstName,
+                lastName,
+            }),
+        );
+    }
+
+    if (!participantsToInsert.length) {
+        return [];
+    }
+
+    const result = await collection.insertMany(participantsToInsert);
+
+    return participantsToInsert.map((participant, index) => ({
+        _id: result.insertedIds[index],
+        ...participant,
+    }));
+}
+
 async function getAllParticipants() {
     const collection = await getParticipantsCollection();
     return collection.find({}).toArray();
@@ -90,6 +172,18 @@ async function renameGroupId(currentGroupId, newGroupId) {
     );
 
     return collection.find({ groupId: newGroupId }).toArray();
+}
+
+async function deleteGroupById(groupId) {
+    const collection = await getParticipantsCollection();
+    const existingParticipants = await collection.find({ groupId }).toArray();
+
+    if (!existingParticipants.length) {
+        return null;
+    }
+
+    await collection.deleteMany({ groupId });
+    return existingParticipants;
 }
 
 async function updateParticipantById(id, participant) {
@@ -254,6 +348,7 @@ async function bulkCreateParticipants(groupId, count) {
 module.exports = {
     bulkCreateParticipants,
     createParticipant,
+    createParticipantInGroup,
     getAllParticipants,
     getAllGroupIds,
     getParticipantById,
@@ -262,9 +357,11 @@ module.exports = {
     getParticipantByGroupAndCode,
     getParticipantsByGroupId,
     groupExists,
+    deleteGroupById,
     renameGroupId,
     linkNfcIdToParticipant,
     updateParticipantById,
     patchParticipantById,
     deleteParticipantById,
+    importParticipants,
 };

@@ -58,6 +58,7 @@ const router = express.Router();
  */
 router.post("/bulk-create", controller.bulkCreateParticipants);
 router.post("/bulk-create-groups", controller.bulkCreateGroups);
+router.post("/import", controller.importParticipants);
 
 /**
  * @swagger
@@ -255,6 +256,8 @@ router.get("/:id/public-link", controller.getParticipantPublicLink);
  */
 router.get("/group/:groupId/print-codes", controller.getPrintableGroupCodes);
 router.patch("/group/:groupId", controller.renameGroup);
+router.delete("/group/:groupId", controller.deleteGroup);
+router.post("/group/:groupId/participants", controller.createParticipantInExistingGroup);
 
 /**
  * @swagger
