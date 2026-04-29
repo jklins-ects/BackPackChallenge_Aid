@@ -18,13 +18,19 @@
                 --shadow: 0 18px 40px rgba(23, 49, 41, 0.12);
             }
 
-            * { box-sizing: border-box; }
+            * {
+                box-sizing: border-box;
+            }
 
             body {
                 margin: 0;
                 font-family: Arial, Helvetica, sans-serif;
-                background:
-                    radial-gradient(circle at top, #f9fcfb 0%, #edf5f1 42%, #e3efe9 100%);
+                background: radial-gradient(
+                    circle at top,
+                    #f9fcfb 0%,
+                    #edf5f1 42%,
+                    #e3efe9 100%
+                );
                 color: var(--text);
                 padding: 24px 16px 40px;
             }
@@ -279,10 +285,11 @@
         <div class="page">
             <section class="hero">
                 <div class="page-title">ECTS Innovation in Action 2026</div>
-                <h1>ECTS Backpack Challenge 2026 Scoreboard</h1>
+                <h1>Event Scoreboard</h1>
                 <p>
-                    View participant totals, filter by group, search by participant
-                    code, name, or record id, and expand rows to see individual scores.
+                    View participant totals, filter by group, search by
+                    participant code, name, or record id, and expand rows to see
+                    individual scores.
                 </p>
             </section>
 
@@ -335,7 +342,8 @@
             const scoreboardList = document.getElementById("scoreboardList");
             const resultsSummary = document.getElementById("resultsSummary");
             const pageSummary = document.getElementById("pageSummary");
-            const paginationSummary = document.getElementById("paginationSummary");
+            const paginationSummary =
+                document.getElementById("paginationSummary");
             const prevPageButton = document.getElementById("prevPage");
             const nextPageButton = document.getElementById("nextPage");
 
@@ -350,7 +358,9 @@
             async function fetchJson(url) {
                 const response = await fetch(url);
                 if (!response.ok) {
-                    throw new Error(`Request failed with status ${response.status}`);
+                    throw new Error(
+                        `Request failed with status ${response.status}`,
+                    );
                 }
                 return response.json();
             }
@@ -452,13 +462,16 @@
                 scoreboardList.innerHTML = "";
 
                 try {
-                    const response = await fetchJson(`/api/public/scoreboard?${params.toString()}`);
+                    const response = await fetchJson(
+                        `/api/public/scoreboard?${params.toString()}`,
+                    );
                     renderItems(response.items || []);
                     updatePagination(response);
                 } catch (error) {
                     scoreboardList.innerHTML =
                         '<div class="empty-message">Unable to load the scoreboard right now.</div>';
-                    resultsSummary.textContent = error.message || "Error loading scoreboard.";
+                    resultsSummary.textContent =
+                        error.message || "Error loading scoreboard.";
                 }
             }
 
