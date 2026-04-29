@@ -449,6 +449,15 @@ async function getPublicStatsPage(req, res, next) {
                             text-align: center;
                         }
 
+                        .page-title {
+                            margin: 0 0 14px;
+                            color: var(--accent);
+                            font-weight: 700;
+                            letter-spacing: 0.06em;
+                            text-transform: uppercase;
+                            font-size: 0.95rem;
+                        }
+
                         .logo {
                             width: 120px;
                             height: 120px;
@@ -523,6 +532,7 @@ async function getPublicStatsPage(req, res, next) {
                 <body>
                     <div class="page">
                         <section class="hero">
+                            <div class="page-title">ECTS Innovation in Action 2026</div>
                             <div class="logo">
                                 ${
                                     participant.logo
