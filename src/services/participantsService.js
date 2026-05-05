@@ -257,18 +257,59 @@ async function deleteParticipantById(id) {
     return existing;
 }
 
-async function linkNfcIdToParticipant(id, nfcId) {
+async function linkNfcIdToParticipant(id, nfcId, options = {}) {
     const collection = await getParticipantsCollection();
+    const normalizedId = String(id);
+    const normalizedNfcId = String(nfcId || "").trim();
+    const forceReassign = options.forceReassign === true;
 
-    const result = await collection.updateOne(
-        { _id: new ObjectId(id) },
-        {
-            $set: {
-                nfcId,
-                updatedAt: new Date(),
-            },
-        },
+    const existingOwner = await collection.findOne(
+        { nfcId: normalizedNfcId },
+        { projection: { _id: 1, participantCode: 1, groupId: 1 } },
     );
+
+    if (
+        existingOwner &&
+        String(existingOwner._id) !== normalizedId
+    ) {
+        if (!forceReassign) {
+            const error = new Error(
+                `NFC id ${normalizedNfcId} is already linked to ${existingOwner.groupId}/${existingOwner.participantCode}.`,
+            );
+            error.statusCode = 409;
+            throw error;
+        }
+
+        await collection.updateOne(
+            { _id: existingOwner._id },
+            {
+                $unset: { nfcId: "" },
+                $set: { updatedAt: new Date() },
+            },
+        );
+    }
+
+    let result;
+    try {
+        result = await collection.updateOne(
+            { _id: new ObjectId(id) },
+            {
+                $set: {
+                    nfcId: normalizedNfcId,
+                    updatedAt: new Date(),
+                },
+            },
+        );
+    } catch (error) {
+        if (error && error.code === 11000) {
+            const duplicateError = new Error(
+                `NFC id ${normalizedNfcId} is already linked to another participant.`,
+            );
+            duplicateError.statusCode = 409;
+            throw duplicateError;
+        }
+        throw error;
+    }
 
     if (result.matchedCount === 0) {
         return null;
@@ -286,6 +327,18 @@ async function linkNfcIdToParticipant(id, nfcId) {
     return {
         participant: mergeResult.participant,
         resolvedPendingEvents: mergeResult.resolvedCount,
+        previousParticipantId:
+            existingOwner && String(existingOwner._id) !== normalizedId
+                ? String(existingOwner._id)
+                : "",
+        previousParticipantCode:
+            existingOwner && String(existingOwner._id) !== normalizedId
+                ? existingOwner.participantCode || ""
+                : "",
+        previousGroupId:
+            existingOwner && String(existingOwner._id) !== normalizedId
+                ? existingOwner.groupId || ""
+                : "",
     };
 }
 

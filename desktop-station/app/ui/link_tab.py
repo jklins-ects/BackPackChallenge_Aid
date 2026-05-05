@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
     QGroupBox,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QTextEdit,
     QVBoxLayout,
@@ -48,6 +49,7 @@ class LinkTab(QWidget):
 
         self.save_name_button = QPushButton("Save Participant Info")
         self.link_button = QPushButton("Associate NFC and Write Stats Link")
+        self.reassign_button = QPushButton("Reassign NFC and Write Stats Link")
 
         self.status_output = QTextEdit()
         self.status_output.setReadOnly(True)
@@ -57,6 +59,7 @@ class LinkTab(QWidget):
         layout.addWidget(self.public_link_label)
         layout.addWidget(self.save_name_button)
         layout.addWidget(self.link_button)
+        layout.addWidget(self.reassign_button)
         layout.addWidget(self.status_output)
 
     def _wire_events(self) -> None:
@@ -64,6 +67,7 @@ class LinkTab(QWidget):
         self.participant_combo.currentIndexChanged.connect(self._handle_participant_selection_change)
         self.save_name_button.clicked.connect(self._save_participant_info)
         self.link_button.clicked.connect(self._link_current_nfc)
+        self.reassign_button.clicked.connect(self._reassign_current_nfc)
 
     def initialize_groups(self, groups: list[str]) -> None:
         self.group_combo.blockSignals(True)
@@ -253,6 +257,12 @@ class LinkTab(QWidget):
         return participant
 
     def _link_current_nfc(self) -> None:
+        self._associate_current_nfc(force_reassign=False)
+
+    def _reassign_current_nfc(self) -> None:
+        self._associate_current_nfc(force_reassign=True)
+
+    def _associate_current_nfc(self, force_reassign: bool) -> None:
         participant = self.participant_combo.currentData()
         nfc_id = self.main_window.get_current_nfc_id()
 
@@ -264,37 +274,83 @@ class LinkTab(QWidget):
             self.status_output.append("Choose a participant before linking.")
             return
 
+        if force_reassign:
+            participant_name = (
+                f"{participant.get('firstName', '')} {participant.get('lastName', '')}"
+            ).strip() or participant.get("participantCode", "this participant")
+            confirmation = QMessageBox.question(
+                self,
+                "Reassign NFC",
+                (
+                    f"Reassign NFC id {nfc_id} to {participant_name}?\n\n"
+                    "If this chip is already linked to another participant, that old association will be removed."
+                ),
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if confirmation != QMessageBox.Yes:
+                self.status_output.append("NFC reassignment cancelled.")
+                return
+
         try:
             updated_participant = self._save_participant_info()
             if isinstance(updated_participant, dict):
                 participant = updated_participant
+        except Exception as error:  # pragma: no cover - UI feedback path
+            self.status_output.append(f"Error saving participant info: {error}")
+            return
 
-            participant_id = str(participant["_id"])
+        participant_id = str(participant["_id"])
 
+        try:
             result = self.main_window.api_client.link_nfc(
                 participant_id=participant_id,
                 nfc_id=nfc_id,
+                force_reassign=force_reassign,
             )
-            resolved_count = result.get("resolvedPendingEvents", 0)
-            updated = result.get("participant", {})
-            self.main_window.update_cached_participant(updated)
-            self.last_linked_participant_id = str(updated.get("_id", participant["_id"]))
-            public_link = result.get("publicLink", "")
-            self.public_link_label.setText(public_link or "No public link loaded")
-            full_name = f"{updated.get('firstName', '')} {updated.get('lastName', '')}".strip()
-            display_name = full_name or updated.get("participantCode", "participant")
-            self._populate_name_fields(updated)
-            self.status_output.append(
-                f"Linked NFC id {nfc_id} to {display_name}. "
-                f"Resolved pending events: {resolved_count}."
-            )
-            if not public_link:
-                self.status_output.append("Participant linked, but no public link was returned.")
-                return
+        except Exception as error:  # pragma: no cover - UI feedback path
+            self.status_output.append(f"Error linking NFC id: {error}")
+            return
 
+        resolved_count = result.get("resolvedPendingEvents", 0)
+        updated = result.get("participant", {})
+        self.main_window.update_cached_participant(updated)
+        self.last_linked_participant_id = str(updated.get("_id", participant["_id"]))
+        public_link = result.get("publicLink", "")
+        self.public_link_label.setText(public_link or "No public link loaded")
+        full_name = f"{updated.get('firstName', '')} {updated.get('lastName', '')}".strip()
+        display_name = full_name or updated.get("participantCode", "participant")
+        previous_participant_id = str(result.get("previousParticipantId", "") or "")
+        if previous_participant_id:
+            previous_participant = self.main_window.participant_cache_by_id.get(
+                previous_participant_id
+            )
+            if isinstance(previous_participant, dict):
+                previous_participant = {
+                    **previous_participant,
+                    "nfcId": "",
+                }
+                self.main_window.update_cached_participant(previous_participant)
+        self._populate_name_fields(updated)
+        self.status_output.append(
+            f"Linked NFC id {nfc_id} to {display_name}. "
+            f"Resolved pending events: {resolved_count}."
+        )
+        previous_group_id = str(result.get("previousGroupId", "") or "")
+        previous_participant_code = str(result.get("previousParticipantCode", "") or "")
+        if previous_participant_id:
+            self.status_output.append(
+                "Removed previous NFC association from "
+                f"{previous_group_id}/{previous_participant_code}."
+            )
+        if not public_link:
+            self.status_output.append("Participant linked, but no public link was returned.")
+            return
+
+        try:
             write_status = self.main_window.nfc_service.write_url(public_link)
             self.main_window.refresh_nfc_context()
             self.status_output.append(f"Public stats link: {public_link}")
             self.status_output.append(write_status)
         except Exception as error:  # pragma: no cover - UI feedback path
-            self.status_output.append(f"Error linking NFC id or writing stats link: {error}")
+            self.status_output.append(f"Error writing stats link to tag: {error}")

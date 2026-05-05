@@ -94,12 +94,21 @@ class ApiClient:
             },
         )
 
-    def link_nfc(self, participant_id: str, nfc_id: str) -> dict:
+    def link_nfc(
+        self,
+        participant_id: str,
+        nfc_id: str,
+        *,
+        force_reassign: bool = False,
+    ) -> dict:
         safe_id = urllib.parse.quote(participant_id, safe="")
         return self._request(
             "PATCH",
             f"/api/participants/{safe_id}/link-nfc",
-            {"nfcId": nfc_id},
+            {
+                "nfcId": nfc_id,
+                "forceReassign": force_reassign,
+            },
         )
 
     def patch_participant(self, participant_id: str, payload: dict) -> dict:

@@ -288,6 +288,7 @@ async function linkNfcIdToParticipant(req, res, next) {
     try {
         const { id } = req.params;
         const { nfcId } = req.body;
+        const forceReassign = req.body?.forceReassign === true;
 
         if (!ObjectId.isValid(id)) {
             return res.status(400).json({ error: "Invalid participant id." });
@@ -300,6 +301,7 @@ async function linkNfcIdToParticipant(req, res, next) {
         const result = await participantsService.linkNfcIdToParticipant(
             id,
             nfcId.trim(),
+            { forceReassign },
         );
 
         if (!result) {
@@ -311,8 +313,14 @@ async function linkNfcIdToParticipant(req, res, next) {
             resolvedPendingEvents: result.resolvedPendingEvents,
             publicLink: buildPublicStatsUrl(req, String(result.participant._id)),
             participant: result.participant,
+            previousParticipantId: result.previousParticipantId,
+            previousParticipantCode: result.previousParticipantCode,
+            previousGroupId: result.previousGroupId,
         });
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ error: error.message });
+        }
         next(error);
     }
 }
