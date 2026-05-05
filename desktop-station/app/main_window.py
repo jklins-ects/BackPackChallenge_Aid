@@ -298,7 +298,7 @@ class MainWindow(QMainWindow):
         if nfc_id:
             self.participant_cache_by_nfc[nfc_id] = participant
 
-        if group_id:
+        if group_id and group_id in self.group_participants_cache:
             existing = self.group_participants_cache.get(group_id, [])
             replaced = False
             updated_group = []
@@ -309,12 +309,10 @@ class MainWindow(QMainWindow):
                     replaced = True
                 else:
                     updated_group.append(existing_participant)
-
             if not replaced:
                 updated_group.append(participant)
 
-            if updated_group:
-                self.group_participants_cache[group_id] = updated_group
+            self.group_participants_cache[group_id] = updated_group
 
     def _refresh_participant_views(self, participant_id: str) -> None:
         if not participant_id:

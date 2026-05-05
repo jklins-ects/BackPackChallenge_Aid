@@ -147,11 +147,13 @@ class LinkTab(QWidget):
 
         try:
             participants = self.main_window.get_cached_participants_by_group(group_id)
+            selected_index = -1
             self.participant_combo.blockSignals(True)
             self.participant_combo.clear()
             if not participants:
                 self.participant_combo.addItem("No participants found", "")
                 self.participant_combo.blockSignals(False)
+                self._handle_participant_selection_change()
                 return
 
             self.participant_combo.addItem("Select a participant", "")
@@ -165,10 +167,20 @@ class LinkTab(QWidget):
                 for index in range(1, self.participant_combo.count()):
                     participant = self.participant_combo.itemData(index)
                     if isinstance(participant, dict) and str(participant.get("_id", "")) == preferred_participant_id:
-                        self.participant_combo.setCurrentIndex(index)
+                        selected_index = index
+                        break
+            else:
+                current_id = self.main_window.shared_participant_id
+                for index in range(1, self.participant_combo.count()):
+                    participant = self.participant_combo.itemData(index)
+                    if isinstance(participant, dict) and str(participant.get("_id", "")) == current_id:
+                        selected_index = index
                         break
 
+            self.participant_combo.setCurrentIndex(selected_index if selected_index >= 0 else 0)
+
             self.participant_combo.blockSignals(False)
+            self._handle_participant_selection_change()
         except Exception as error:  # pragma: no cover - UI feedback path
             self._clear_participants("Unable to load participants")
             self.status_output.append(f"Error loading participants: {error}")
@@ -197,11 +209,15 @@ class LinkTab(QWidget):
 
     def _sync_selection_from_current_nfc(self, nfc_id: str) -> None:
         normalized_nfc = (nfc_id or "").strip()
-        if normalized_nfc == self.last_loaded_nfc_id:
+        if (
+            normalized_nfc == self.last_loaded_nfc_id
+            and self.main_window.shared_group_id
+            and self.main_window.shared_participant_id
+        ):
             return
 
-        self.last_loaded_nfc_id = normalized_nfc
         if not normalized_nfc:
+            self.last_loaded_nfc_id = ""
             self.public_link_label.setText("No public link loaded")
             return
 
@@ -213,6 +229,8 @@ class LinkTab(QWidget):
 
         if not isinstance(participant, dict):
             return
+
+        self.last_loaded_nfc_id = normalized_nfc
 
         group_id = str(participant.get("groupId", "")).strip()
         participant_id = str(participant.get("_id", "")).strip()
