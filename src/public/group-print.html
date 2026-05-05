@@ -349,6 +349,9 @@
                     <button id="saveWordBtn" type="button">
                         Save to Word (.docx)
                     </button>
+                    <button id="exportSvgBtn" type="button">
+                        Export SVG for Laser
+                    </button>
                 </div>
 
                 <div class="control-row">
@@ -391,6 +394,7 @@
             const toggleLowWaste = document.getElementById("toggleLowWaste");
             const printBtn = document.getElementById("printBtn");
             const saveWordBtn = document.getElementById("saveWordBtn");
+            const exportSvgBtn = document.getElementById("exportSvgBtn");
             const statusMessage = document.getElementById("statusMessage");
             const groupTitle = document.getElementById("groupTitle");
             const participantContainer = document.getElementById(
@@ -708,6 +712,133 @@
 
             function inchesToTwip(inches) {
                 return Math.round(inches * 1440);
+            }
+
+            function pxToMm(px) {
+                return (px * 25.4) / 96;
+            }
+
+            function formatSvgNumber(value) {
+                return Number(value.toFixed(3));
+            }
+
+            function escapeXml(value = "") {
+                return String(value)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&apos;");
+            }
+
+            function stripHtml(text = "") {
+                return String(text).replace(/<[^>]+>/g, "");
+            }
+
+            async function imageSrcToDataUrl(src) {
+                if (!src) {
+                    return null;
+                }
+
+                if (src.startsWith("data:")) {
+                    return src;
+                }
+
+                const response = await fetch(src);
+                if (!response.ok) {
+                    throw new Error(
+                        `Image request failed: ${response.status} ${response.statusText}`,
+                    );
+                }
+
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () =>
+                        reject(
+                            new Error(
+                                "Failed to convert image to embedded SVG data.",
+                            ),
+                        );
+                    reader.readAsDataURL(blob);
+                });
+            }
+
+            function wrapSvgText(text, maxWidthMm, fontPx, fontWeight = "400") {
+                const normalized = String(text || "").trim().replace(/\s+/g, " ");
+                if (!normalized) {
+                    return [];
+                }
+
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                ctx.font = `${fontWeight} ${fontPx}px Arial`;
+                const maxWidthPx = (maxWidthMm * 96) / 25.4;
+                const words = normalized.split(" ");
+                const lines = [];
+                let current = "";
+
+                for (const word of words) {
+                    const candidate = current ? `${current} ${word}` : word;
+                    if (
+                        current &&
+                        ctx.measureText(candidate).width > maxWidthPx
+                    ) {
+                        lines.push(current);
+                        current = word;
+                    } else {
+                        current = candidate;
+                    }
+                }
+
+                if (current) {
+                    lines.push(current);
+                }
+
+                return lines;
+            }
+
+            function buildSvgTextBlock({
+                textLines = [],
+                xMm,
+                yMm,
+                widthMm,
+                fontPx,
+                fontWeight = "400",
+                fill = "#000000",
+                lineHeightMultiplier = 1.25,
+            }) {
+                if (!textLines.length) {
+                    return "";
+                }
+
+                const fontSizeMm = pxToMm(fontPx);
+                const lineHeightMm = fontSizeMm * lineHeightMultiplier;
+                const centerMm = xMm + widthMm / 2;
+
+                return `
+                    <text
+                        x="${formatSvgNumber(centerMm)}"
+                        y="${formatSvgNumber(yMm + fontSizeMm)}"
+                        text-anchor="middle"
+                        font-family="Arial, Helvetica, sans-serif"
+                        font-size="${formatSvgNumber(fontSizeMm)}mm"
+                        font-weight="${escapeXml(fontWeight)}"
+                        fill="${escapeXml(fill)}"
+                    >
+                        ${textLines
+                            .map(
+                                (line, index) => `
+                                    <tspan
+                                        x="${formatSvgNumber(centerMm)}"
+                                        dy="${index === 0 ? 0 : formatSvgNumber(lineHeightMm)}mm"
+                                    >${escapeXml(line)}</tspan>
+                                `,
+                            )
+                            .join("")}
+                    </text>
+                `;
             }
 
             function dataUrlToUint8Array(dataUrl) {
@@ -1119,6 +1250,227 @@
                 }
             }
 
+            async function exportLaserSvg() {
+                const grid = document.querySelector(".participant-grid");
+                const cards = Array.from(
+                    document.querySelectorAll(".participant-card"),
+                );
+                const groupId = (groupSelect.value || "").trim();
+
+                if (!groupId || !grid || !cards.length) {
+                    statusMessage.textContent =
+                        "Load a group before exporting an SVG.";
+                    return;
+                }
+
+                try {
+                    statusMessage.textContent =
+                        "Building SVG laser export...";
+
+                    const gridRect = grid.getBoundingClientRect();
+                    const cutRadiusMm = 13.5;
+                    const cutRadiusPx = (cutRadiusMm * 96) / 25.4;
+                    let minLeftPx = 0;
+                    let minTopPx = 0;
+                    let maxRightPx = gridRect.width;
+                    let maxBottomPx = gridRect.height;
+                    const engraveParts = [];
+                    const cutParts = [];
+                    const defs = [];
+
+                    for (const [index, card] of cards.entries()) {
+                        const logo = card.querySelector(".participant-logo[src]");
+                        const logoWrap = card.querySelector(".logo-wrap");
+                        const cardRect = card.getBoundingClientRect();
+                        const logoRect =
+                            (logo || logoWrap)?.getBoundingClientRect() || null;
+
+                        const cardX = pxToMm(cardRect.left - gridRect.left);
+                        const cardY = pxToMm(cardRect.top - gridRect.top);
+                        const cardWidth = pxToMm(cardRect.width);
+
+                        if (logoRect) {
+                            const centerXPx =
+                                logoRect.left -
+                                gridRect.left +
+                                logoRect.width / 2;
+                            const centerYPx =
+                                logoRect.top - gridRect.top + logoRect.height / 2;
+                            const centerX = pxToMm(centerXPx);
+                            const centerY = pxToMm(centerYPx);
+                            const clipRadiusMm = pxToMm(
+                                Math.min(logoRect.width, logoRect.height) / 2,
+                            );
+                            const clipId = `logo-clip-${index}`;
+
+                            minLeftPx = Math.min(
+                                minLeftPx,
+                                centerXPx - cutRadiusPx,
+                            );
+                            minTopPx = Math.min(
+                                minTopPx,
+                                centerYPx - cutRadiusPx,
+                            );
+                            maxRightPx = Math.max(
+                                maxRightPx,
+                                centerXPx + cutRadiusPx,
+                            );
+                            maxBottomPx = Math.max(
+                                maxBottomPx,
+                                centerYPx + cutRadiusPx,
+                            );
+
+                            defs.push(`
+                                <clipPath id="${clipId}">
+                                    <circle
+                                        cx="${formatSvgNumber(centerX)}"
+                                        cy="${formatSvgNumber(centerY)}"
+                                        r="${formatSvgNumber(clipRadiusMm)}"
+                                    />
+                                </clipPath>
+                            `);
+
+                            if (logo) {
+                                const href = await imageSrcToDataUrl(logo.src);
+                                engraveParts.push(`
+                                    <image
+                                        x="${formatSvgNumber(pxToMm(logoRect.left - gridRect.left))}"
+                                        y="${formatSvgNumber(pxToMm(logoRect.top - gridRect.top))}"
+                                        width="${formatSvgNumber(pxToMm(logoRect.width))}"
+                                        height="${formatSvgNumber(pxToMm(logoRect.height))}"
+                                        preserveAspectRatio="xMidYMid slice"
+                                        clip-path="url(#${clipId})"
+                                        href="${escapeXml(href)}"
+                                    />
+                                `);
+                            }
+
+                            cutParts.push(`
+                                <circle
+                                    cx="${formatSvgNumber(centerX)}"
+                                    cy="${formatSvgNumber(centerY)}"
+                                    r="${formatSvgNumber(cutRadiusMm)}"
+                                    fill="none"
+                                    stroke="#FF0000"
+                                    stroke-width="0.2"
+                                    vector-effect="non-scaling-stroke"
+                                    class="cut-path"
+                                    data-operation="cut"
+                                />
+                            `);
+                        }
+
+                        if (!toggleLowWaste.checked && toggleNames.checked) {
+                            const nameEl = card.querySelector(".participant-name");
+                            if (nameEl) {
+                                const nameRect = nameEl.getBoundingClientRect();
+                                const fontPx = parseFloat(
+                                    window.getComputedStyle(nameEl).fontSize,
+                                );
+                                const lines = wrapSvgText(
+                                    nameEl.textContent.trim(),
+                                    pxToMm(nameRect.width),
+                                    fontPx,
+                                    "700",
+                                );
+                                engraveParts.push(
+                                    buildSvgTextBlock({
+                                        textLines: lines,
+                                        xMm: pxToMm(
+                                            nameRect.left - gridRect.left,
+                                        ),
+                                        yMm: pxToMm(nameRect.top - gridRect.top),
+                                        widthMm: pxToMm(nameRect.width),
+                                        fontPx,
+                                        fontWeight: "700",
+                                        fill: "#000000",
+                                    }),
+                                );
+                            }
+                        }
+
+                        if (!toggleLowWaste.checked && toggleStats.checked) {
+                            const statEls = Array.from(
+                                card.querySelectorAll(".participant-stats div"),
+                            );
+                            for (const statEl of statEls) {
+                                const statRect = statEl.getBoundingClientRect();
+                                const statText = stripHtml(
+                                    statEl.textContent.trim(),
+                                );
+                                const fontPx = parseFloat(
+                                    window.getComputedStyle(statEl).fontSize,
+                                );
+                                const lines = wrapSvgText(
+                                    statText,
+                                    pxToMm(statRect.width),
+                                    fontPx,
+                                );
+                                engraveParts.push(
+                                    buildSvgTextBlock({
+                                        textLines: lines,
+                                        xMm: pxToMm(
+                                            statRect.left - gridRect.left,
+                                        ),
+                                        yMm: pxToMm(statRect.top - gridRect.top),
+                                        widthMm: pxToMm(statRect.width),
+                                        fontPx,
+                                        fill: "#000000",
+                                        lineHeightMultiplier: 1.2,
+                                    }),
+                                );
+                            }
+                        }
+                    }
+
+                    const offsetXmm = pxToMm(-minLeftPx);
+                    const offsetYmm = pxToMm(-minTopPx);
+                    const svgWidthMm = pxToMm(maxRightPx - minLeftPx);
+                    const svgHeightMm = pxToMm(maxBottomPx - minTopPx);
+
+                    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    version="1.1"
+    width="${formatSvgNumber(svgWidthMm)}mm"
+    height="${formatSvgNumber(svgHeightMm)}mm"
+    viewBox="0 0 ${formatSvgNumber(svgWidthMm)} ${formatSvgNumber(svgHeightMm)}"
+>
+    <title>${escapeXml(groupId)} Laser Export</title>
+    <desc>Pure red circles in the cut-layer are intended as cut paths. Images and text are in the engrave-layer.</desc>
+    <defs>
+        ${defs.join("")}
+    </defs>
+    <g id="engrave-layer" transform="translate(${formatSvgNumber(offsetXmm)} ${formatSvgNumber(offsetYmm)})">
+        ${engraveParts.join("")}
+    </g>
+    <g id="cut-layer" transform="translate(${formatSvgNumber(offsetXmm)} ${formatSvgNumber(offsetYmm)})">
+        ${cutParts.join("")}
+    </g>
+</svg>`;
+
+                    const blob = new Blob([svg], {
+                        type: "image/svg+xml;charset=utf-8",
+                    });
+                    const objectUrl = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = objectUrl;
+                    link.download = `${groupId.replace(/[^a-z0-9-_]+/gi, "_") || "group"}-laser.svg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+                    statusMessage.textContent =
+                        "SVG laser export downloaded. Red circles are isolated in the cut-layer.";
+                } catch (error) {
+                    console.error(error);
+                    statusMessage.textContent =
+                        "Error creating SVG laser export.";
+                }
+            }
+
             groupSelect.addEventListener("change", () => {
                 loadParticipantsForGroup(groupSelect.value);
             });
@@ -1133,6 +1485,10 @@
 
             saveWordBtn.addEventListener("click", () => {
                 saveToWord();
+            });
+
+            exportSvgBtn.addEventListener("click", () => {
+                exportLaserSvg();
             });
 
             async function init() {
