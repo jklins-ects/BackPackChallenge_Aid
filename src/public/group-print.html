@@ -217,6 +217,19 @@
                 border-radius: 50%;
             }
 
+            .participant-logo-fallback {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                font-size: 0.34in;
+                line-height: 1;
+                color: #ffffff;
+                letter-spacing: 0.03em;
+                text-transform: uppercase;
+                background: #4a90e2;
+            }
+
             .participant-name {
                 font-weight: bold;
                 font-size: 0.95rem;
@@ -474,6 +487,42 @@
                     .join("");
             }
 
+            function initialsFromParticipant(participant) {
+                const firstInitial = String(participant?.firstName || "")
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase();
+                const lastInitial = String(participant?.lastName || "")
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase();
+                const codeInitial = String(participant?.participantCode || "")
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase();
+
+                return `${firstInitial}${lastInitial}`.trim() || codeInitial || "?";
+            }
+
+            function fallbackLogoColor(participant) {
+                const colors = [
+                    "#4A90E2",
+                    "#50E3C2",
+                    "#F5A623",
+                    "#BD10E0",
+                    "#7ED321",
+                ];
+                const seed = String(
+                    participant?.participantCode ||
+                        `${participant?.firstName || ""}${participant?.lastName || ""}`,
+                );
+                let hash = 0;
+                for (let index = 0; index < seed.length; index += 1) {
+                    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+                }
+                return colors[hash % colors.length];
+            }
+
             function renderParticipants(groupId, participants) {
                 groupTitle.textContent = groupId
                     ? `Group: ${groupId}`
@@ -494,6 +543,8 @@
                       `${participant.firstName || ""} ${participant.lastName || ""}`.trim();
                   const safeName = fullName || "Unnamed Participant";
                   const logo = participant.logo || "";
+                  const initials = initialsFromParticipant(participant);
+                  const fallbackColor = fallbackLogoColor(participant);
 
                   return `
               <div class="participant-card">
@@ -501,7 +552,7 @@
                   ${
                       logo
                           ? `<img class="participant-logo" src="${logo}" alt="${safeName} logo" />`
-                          : `<div class="participant-logo"></div>`
+                          : `<div class="participant-logo participant-logo-fallback" style="background:${fallbackColor};">${initials}</div>`
                   }
                 </div>
 
@@ -659,6 +710,19 @@
                 object-fit: cover;
                 display: block;
                 border-radius: 50%;
+            }
+
+            .participant-logo-fallback {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                font-size: 0.34in;
+                line-height: 1;
+                color: #ffffff;
+                letter-spacing: 0.03em;
+                text-transform: uppercase;
+                background: #4a90e2;
             }
 
             .participant-name {

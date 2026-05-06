@@ -1,4 +1,5 @@
 const { ObjectId } = require("mongodb");
+const QRCode = require("qrcode");
 const { isValidParticipant } = require("../utils/validateParticipant");
 const {
     isValidParticipantPatch,
@@ -924,8 +925,9 @@ async function getPrintableGroupCodes(req, res, next) {
             a.participantCode.localeCompare(b.participantCode),
         );
 
-        const cardsHtml = sorted
-            .map((participant) => {
+        const cardsHtml = (
+            await Promise.all(
+                sorted.map(async (participant) => {
                 const name =
                     `${participant.firstName || ""} ${participant.lastName || ""}`.trim();
                 const profileLink = buildPublicStatsLookupUrl(
@@ -933,17 +935,28 @@ async function getPrintableGroupCodes(req, res, next) {
                     participant.groupId,
                     participant.participantCode,
                 );
+                const qrCodeDataUrl = await QRCode.toDataURL(profileLink, {
+                    errorCorrectionLevel: "M",
+                    margin: 0,
+                    width: 84,
+                    color: {
+                        dark: "#000000",
+                        light: "#FFFFFF",
+                    },
+                });
 
                 return `
         <div class="card">
+          <img class="qr-code" src="${qrCodeDataUrl}" alt="QR code for ${participant.participantCode}" />
           <div class="group">${participant.groupId}</div>
           <div class="code">${participant.participantCode}</div>
           <div class="name">${name || "&nbsp;"}</div>
           <div class="link">${profileLink}</div>
         </div>
       `;
-            })
-            .join("");
+                }),
+            )
+        ).join("");
 
         res.send(`
       <!DOCTYPE html>
@@ -986,10 +999,20 @@ async function getPrintableGroupCodes(req, res, next) {
             justify-content: space-between;
             page-break-inside: avoid;
             break-inside: avoid;
+            position: relative;
+          }
+          .qr-code {
+            position: absolute;
+            top: 0.12in;
+            right: 0.12in;
+            width: 0.52in;
+            height: 0.52in;
+            object-fit: contain;
           }
           .group {
             font-size: 10pt;
             color: #555;
+            padding-right: 0.62in;
           }
           .code {
             font-size: 24pt;

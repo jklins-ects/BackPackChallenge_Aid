@@ -16,7 +16,7 @@ function generateBase64Logo(firstName = "", lastName = "") {
     const initials = `${firstInitial}${lastInitial}`;
 
     ctx.fillStyle = "#FFFFFF";
-    ctx.font = `bold ${Math.floor(width / 2.5)}px Arial`;
+    ctx.font = `bold ${Math.floor(width / 2.5)}px sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(initials, width / 2, height / 2);
