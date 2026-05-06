@@ -1119,6 +1119,26 @@
                 summaryCode.textContent = `Code: ${participant.participantCode || "—"}`;
             }
 
+            function loadSelectedParticipantLogo() {
+                const participant = getSelectedParticipant();
+                const logo = String(participant?.logo || "").trim();
+
+                if (!participant) {
+                    clearPreview();
+                    return;
+                }
+
+                if (!logo) {
+                    clearPreview();
+                    previewPlaceholder.style.display = "block";
+                    previewPlaceholder.textContent =
+                        "No saved logo for this participant yet.";
+                    return;
+                }
+
+                loadImageFromDataUrl(logo);
+            }
+
             function fillParticipantOptions(participants) {
                 state.participantsById = new Map();
                 participantSelect.innerHTML = "";
@@ -1342,6 +1362,7 @@
 
             participantSelect.addEventListener("change", () => {
                 updateParticipantSummary();
+                loadSelectedParticipantLogo();
             });
 
             window.addEventListener("resize", () => {

@@ -7,6 +7,10 @@ const {
 const {
     buildParticipantForInsert,
 } = require("../utils/buildParticipantForInsert");
+const {
+    generateBase64Logo,
+    isGeneratedPlaceholderLogo,
+} = require("../utils/generateLogo");
 const participantsService = require("../services/participantsService");
 const {
     validateBulkCreateParticipants,
@@ -218,6 +222,17 @@ async function updateParticipantById(req, res, next) {
             updatedAt: new Date(),
         };
 
+        if (
+            typeof req.body.logo !== "string" &&
+            isGeneratedPlaceholderLogo(existing.logo)
+        ) {
+            participant.logo = generateBase64Logo(
+                participant.firstName,
+                participant.lastName,
+                participant.participantCode,
+            );
+        }
+
         if (req.body.nfcId?.trim?.()) {
             participant.nfcId = req.body.nfcId.trim();
         } else {
@@ -247,9 +262,42 @@ async function patchParticipantById(req, res, next) {
             return res.status(400).json({ error: validation.message });
         }
 
+        const existing = await participantsService.getParticipantById(id);
+        if (!existing) {
+            return res.status(404).json({ error: "Participant not found." });
+        }
+
+        const patchData = { ...req.body };
+        const nextFirstName =
+            "firstName" in patchData
+                ? String(patchData.firstName || "")
+                : String(existing.firstName || "");
+        const nextLastName =
+            "lastName" in patchData
+                ? String(patchData.lastName || "")
+                : String(existing.lastName || "");
+        const nextParticipantCode =
+            "participantCode" in patchData
+                ? String(patchData.participantCode || "").toUpperCase()
+                : String(existing.participantCode || "");
+
+        if (
+            !("logo" in patchData) &&
+            isGeneratedPlaceholderLogo(existing.logo) &&
+            (("firstName" in patchData) ||
+                ("lastName" in patchData) ||
+                ("participantCode" in patchData))
+        ) {
+            patchData.logo = generateBase64Logo(
+                nextFirstName,
+                nextLastName,
+                nextParticipantCode,
+            );
+        }
+
         const updated = await participantsService.patchParticipantById(
             id,
-            req.body,
+            patchData,
         );
 
         if (!updated) {

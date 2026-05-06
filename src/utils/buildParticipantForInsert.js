@@ -5,14 +5,18 @@ function buildParticipantForInsert(input) {
     const firstName = input.firstName?.trim?.() || "";
     const lastName = input.lastName?.trim?.() || "";
     const logo = input.logo?.trim?.() || "";
+    const participantCode = input.participantCode.trim().toUpperCase();
 
     return {
         groupId: input.groupId.trim(),
-        participantCode: input.participantCode.trim().toUpperCase(),
+        participantCode,
         ...(input.nfcId?.trim?.() ? { nfcId: input.nfcId.trim() } : {}),
         firstName,
         lastName,
-        logo: logo !== "" ? logo : generateBase64Logo(firstName, lastName),
+        logo:
+            logo !== ""
+                ? logo
+                : generateBase64Logo(firstName, lastName, participantCode),
         stats: applyDefaultStats(input.stats),
         createdAt: new Date(),
         updatedAt: new Date(),

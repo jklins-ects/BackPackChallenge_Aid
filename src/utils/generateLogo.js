@@ -1,32 +1,74 @@
-const { createCanvas } = require("canvas");
+const COLORS = ["#4A90E2", "#50E3C2", "#F5A623", "#BD10E0", "#7ED321"];
 
-function generateBase64Logo(firstName = "", lastName = "") {
-    const width = 200;
-    const height = 200;
+function escapeXml(value = "") {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+}
 
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext("2d");
+function pickColor(seed = "") {
+    const normalizedSeed = String(seed || "").trim() || "?";
+    let hash = 0;
 
-    const colors = ["#4A90E2", "#50E3C2", "#F5A623", "#BD10E0", "#7ED321"];
-    ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-    ctx.fillRect(0, 0, width, height);
+    for (let index = 0; index < normalizedSeed.length; index += 1) {
+        hash = (hash * 31 + normalizedSeed.charCodeAt(index)) >>> 0;
+    }
 
-    const firstInitial = firstName?.charAt(0)?.toUpperCase() || "?";
-    const lastInitial = lastName?.charAt(0)?.toUpperCase() || "";
-    const initials = `${firstInitial}${lastInitial}`;
+    return COLORS[hash % COLORS.length];
+}
 
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = `bold ${Math.floor(width / 2.5)}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(initials, width / 2, height / 2);
+function buildInitials(firstName = "", lastName = "", participantCode = "") {
+    const firstInitial = String(firstName || "").trim().charAt(0).toUpperCase();
+    const lastInitial = String(lastName || "").trim().charAt(0).toUpperCase();
+    const codeInitial = String(participantCode || "").trim().charAt(0).toUpperCase();
 
-    const buffer = canvas.toBuffer("image/png");
-    const base64 = buffer.toString("base64");
+    return `${firstInitial}${lastInitial}`.trim() || codeInitial || "?";
+}
 
-    return `data:image/png;base64,${base64}`;
+function isGeneratedPlaceholderLogo(logo = "") {
+    const normalized = String(logo || "").trim();
+    if (!normalized.startsWith("data:image/svg+xml")) {
+        return false;
+    }
+
+    try {
+        const encoded = normalized.split(",")[1] || "";
+        const decoded = decodeURIComponent(encoded);
+        return decoded.includes('data-placeholder-logo="1"');
+    } catch (error) {
+        return false;
+    }
+}
+
+function generateBase64Logo(firstName = "", lastName = "", participantCode = "") {
+    const initials = buildInitials(firstName, lastName, participantCode);
+    const fillColor = pickColor(`${participantCode}${firstName}${lastName}`);
+
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="${escapeXml(initials)}" data-placeholder-logo="1">
+            <circle cx="100" cy="100" r="100" fill="${fillColor}" />
+            <text
+                x="100"
+                y="100"
+                text-anchor="middle"
+                dominant-baseline="middle"
+                fill="#FFFFFF"
+                font-family="Arial, Helvetica, sans-serif"
+                font-size="82"
+                font-weight="700"
+                letter-spacing="3"
+            >${escapeXml(initials)}</text>
+        </svg>
+    `.trim();
+
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 module.exports = {
+    buildInitials,
     generateBase64Logo,
+    isGeneratedPlaceholderLogo,
 };
