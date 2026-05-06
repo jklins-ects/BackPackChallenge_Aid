@@ -6,6 +6,8 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "db:setup": "node scripts/setupMongo.js",
+        "logos:repair-placeholders": "node scripts/repairPlaceholderLogos.js",
+        "logos:repair-placeholders:write": "node scripts/repairPlaceholderLogos.js --write",
         "start": "node src/server.js",
         "dev": "node src/server.js"
     },
